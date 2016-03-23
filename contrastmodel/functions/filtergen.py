@@ -10,7 +10,7 @@ def _gauss(x, std):
     :return: np.array
     """
 
-    return np.exp(x**2 / (2 * std**2) / (std * math.sqrt(2 * math.pi)))
+    return np.exp(-(x**2) / (2 * (std**2))) / (std * math.sqrt(2 * math.pi))
 
 
 def _d2gauss(n1, std1, n2, std2, theta):
@@ -38,34 +38,59 @@ def _d2gauss(n1, std1, n2, std2, theta):
     Ys = np.tile(temp, (1, n1))  # creates an len(temp) x n1 array?
 
     # reshape into vectors
-    Xs = np.reshape(Xs, (1, n1*n2))
-    Ys = np.reshape(Ys, (1, n1*n2))
+    Xs = np.reshape(Xs, (1, n1*n2), order='F').copy()
+    Ys = np.reshape(Ys, (1, n1*n2), order='F').copy()
 
-    coor = r.dot(np.vstack((Xs, Ys)))
+    coor = np.dot(r, np.vstack((Xs, Ys)))
 
     # compute 1D Gaussians
     gaussX = _gauss(np.array(coor[0, :]), std1)
     gaussY = _gauss(np.array(coor[1, :]), std2)
 
     # elementwise multiplication creates a 2D Gaussian
-    h = np.reshape(gaussX * gaussY, (n2, n1))
+    h = np.reshape(gaussX * gaussY, (n2, n1), order='F').copy()
     h = h / np.sum(h)
 
     return h
 
-# TODO: implement dogEx
+
+def gen_ODOG(rows, cols, row_std, col_std, sr1, sr2, theta, centerWeight):
+    """
+    Generates a 2D Oriented Difference of Gaussian (ODOG) filter
+    :param rows: int
+    :param cols: int
+    :param row_std: float
+    :param col_std: float
+    :param sr1: float
+    :param sr2: float
+    :param theta: float
+    :param centerWeight: float
+    :return: np.array
+    """
+
+    return centerWeight * (_d2gauss(rows, row_std, cols, col_std, theta) -
+                           _d2gauss(rows, row_std * sr1, cols, col_std * sr2,
+                                    theta))
 
 
 # testing
 if __name__ == "__main__":
     print("testing d2gauss - should produce 200x200 gaussian")
-    test = _d2gauss(200, 20, 200, 20, 60)
+    test = _d2gauss(200, 8.4, 200, 8.4, 60)
 
     import matplotlib.pyplot as plt
 
     fig = plt.imshow(test)
     plt.show()
 
+    print("now generating ODOG filter")
+    test2 = gen_ODOG(500, 500, 8.4, 8.4, 1.0, 2.0, 60, 1.0)
+
+    fig2 = plt.imshow(test2)
+    plt.colorbar()
+    plt.show()
+
+    # Note: double checked against MATLAB code, and results were the same
 
 
 
