@@ -3,6 +3,14 @@
     <words>
       <w>contrastmodel</w>
       <w>filt</w>
+      <w>gabor</w>
+      <w>gaussians</w>
+      <w>ndarray</w>
+      <w>odog</w>
+      <w>postsynaptic</w>
+      <w>presynaptic</w>
+      <w>sqrt</w>
+      <w>stdev</w>
     </words>
   </dictionary>
 </component>

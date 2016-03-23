@@ -70,16 +70,15 @@ class Params:
     # TODO: move this to model class?
     filt.label = []
 
-    # following values are only used in bm_filt, not bm_filt_fast
-    # TODO: check where these values are used
+    # following values are used in gen_ODOG
     filt.stretchWidth = 1.0        # width of DOG, == 1 in ODOG, > 1 makes
-    # filter more GABOR-like.
+    # filter more Gabor-like.
     filt.negwidth = 1.0     # std ratio of negative surround to center,
     # == 1 in ODOG
     filt.neglen = 2.0       # std ratio of negative surround to center,
     # == 2 in ODOG
-    filt.centerW = 1.0      # weight on center guassian, >1 = positive sum
-    # guassian. == 1 in ODOG
+    filt.centerW = 1.0      # weight on center gaussian, >1 = positive sum
+    # gaussian. == 1 in ODOG
 
     # ---calculate values for filt.stdev_pixels and filt.w
     # compute the standard deviations of the different Gaussian in pixels
@@ -102,4 +101,4 @@ class Params:
 
 if __name__ == "__main__":
     params = Params()
-    print("doing something")
+    print("class instance created, doing nothing else")
