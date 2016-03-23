@@ -28,19 +28,45 @@ def _d2gauss(n1, std1, n2, std2, theta):
     """
 
     # create transformation matrix for rotation
-    r = numpy.array([[math.cos(theta), -math.sin(theta)],
+    r = np.array([[math.cos(theta), -math.sin(theta)],
                      [math.sin(theta), math.cos(theta)]])
 
-    temp = np.array(range(-(n1 - 1) / 2, n1 / 2))  # TODO: verify this is
-    # integer division
-    Xs = np.tile(temp, (n2, 1))  # creates an n2 x len(temp) array?
-    temp = np.array([range(-(n2 - 1) / 2, n1 / 2)])  # TODO: verify that
-    # this results in a single-row 2D array (shows up as [[ x y z ]] rather
-    # than [x y z]
+    temp = np.array(range(-(n1 - 1) / 2, n1 / 2))
+    Xs = np.tile(temp, (n2, 1))
+    temp = np.array([range(-(n2 - 1) / 2, n1 / 2)])
     temp = temp.T
     Ys = np.tile(temp, (1, n1))  # creates an len(temp) x n1 array?
 
+    # reshape into vectors
+    Xs = np.reshape(Xs, (1, n1*n2))
+    Ys = np.reshape(Ys, (1, n1*n2))
+
     coor = r.dot(np.vstack((Xs, Ys)))
 
-    #TODO: finish this function
+    # compute 1D Gaussians
+    gaussX = _gauss(np.array(coor[0, :]), std1)
+    gaussY = _gauss(np.array(coor[1, :]), std2)
+
+    # elementwise multiplication creates a 2D Gaussian
+    h = np.reshape(gaussX * gaussY, (n2, n1))
+    h = h / np.sum(h)
+
+    return h
+
+# TODO: implement dogEx
+
+
+# testing
+if __name__ == "__main__":
+    print("testing d2gauss - should produce 200x200 gaussian")
+    test = _d2gauss(200, 20, 200, 20, 60)
+
+    import matplotlib.pyplot as plt
+
+    fig = plt.imshow(test)
+    plt.show()
+
+
+
+
 
