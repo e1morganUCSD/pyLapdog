@@ -5,6 +5,7 @@ import scipy.signal as ss
 import filtergen as fg
 from progressbar import ProgressBar, Percentage, Bar
 import time
+import cPickle as pickle
 
 
 def _compare_filters(pre_filter, post_filter):
@@ -130,7 +131,7 @@ def generate_correlation_mask(params):
     pbar_count = 1
 
     for o in range(len(orientations)):
-        print("{} {}".format("Now calculating orientation", o))
+        # print("{} {}".format("Now calculating orientation", o))
         filtermasks[o] = {}
         ap_filtermasks[o] = {}
         for f in range(len(stdev_pixels)):
@@ -147,8 +148,8 @@ def generate_correlation_mask(params):
                 post_filter)) * 0.01)
 
             for o2 in range(len(orientations)):
-                print("{} {}-{}-{}".format("Now calculating orientation", o,
-                                           f, o2))
+                # print("{} {}-{}-{}".format("Now calculating orientation",
+                # o, f, o2))
                 filtermasks[o][f][o2] = {}
                 ap_filtermasks[o][f][o2] = {}
                 for f2 in range(len(stdev_pixels)):
@@ -172,8 +173,10 @@ def generate_correlation_mask(params):
 
     pbar.finish()
 
-    np.save("filtermasks_nonFFT.npy", filtermasks)
-    np.save("ap_filtermasks_nonFFT.npy", ap_filtermasks)
+    pickle.dump(filtermasks, open("filtermasks.pkl", mode='wb'), protocol=2)
+    pickle.dump(ap_filtermasks, open("ap_filtermasks.pkl", mode='wb'), protocol=2)
+    # np.save("filtermasks_nonFFT.npy", filtermasks)
+    # np.save("ap_filtermasks_nonFFT.npy", ap_filtermasks)
 
     return filtermasks, ap_filtermasks
 
@@ -212,7 +215,7 @@ def generate_correlation_mask_fft(params):
     pbar_count = 1
 
     for o in range(len(orientations)):
-        print("{} {}".format("Now calculating orientation", o))
+        # print("{} {}".format("Now calculating orientation", o))
         filtermasks[o] = {}
         ap_filtermasks[o] = {}
         for f in range(len(stdev_pixels)):
@@ -230,8 +233,8 @@ def generate_correlation_mask_fft(params):
             #     post_filter)) * 0.01)
 
             for o2 in range(len(orientations)):
-                print("{} {}-{}-{}".format("Now calculating orientation", o,
-                                           f, o2))
+                # print("{} {}-{}-{}".format("Now calculating orientation",
+                # o, f, o2))
                 filtermasks[o][f][o2] = {}
                 ap_filtermasks[o][f][o2] = {}
                 for f2 in range(len(stdev_pixels)):
@@ -262,8 +265,12 @@ def generate_correlation_mask_fft(params):
 
     pbar.finish()
 
-    np.save("filtermasks_FFT.npy", filtermasks)
-    np.save("ap_filtermasks_FFT.npy", ap_filtermasks)
+    pickle.dump(filtermasks, open("filtermasks_FFT.pkl", mode='wb'),
+                protocol=2)
+    pickle.dump(ap_filtermasks, open("ap_filtermasks_FFT.pkl", mode='wb'),
+                protocol=2)
+    # np.save("filtermasks_FFT.npy", filtermasks)
+    # np.save("ap_filtermasks_FFT.npy", ap_filtermasks)
 
     return filtermasks, ap_filtermasks
 
