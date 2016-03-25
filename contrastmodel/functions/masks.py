@@ -296,7 +296,7 @@ if __name__ == "__main__":
 
     test = filtermasks[1][2][2][1]
     import matplotlib.pyplot as plt
-    fig = plt.imshow(test)
+    fig = plt.imshow(test, interpolation="none")
     plt.colorbar()
     plt.show()
 

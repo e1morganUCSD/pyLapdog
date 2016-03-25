@@ -3,8 +3,9 @@ import cPickle as pickle
 
 if __name__ == "__main__":
     import sys
+    import os
 
-    sys.path.insert(0,"/Users/Eric/PycharmProjects/pyLapdog/")
+    sys.path.insert(0, "/Users/Eric/PycharmProjects/pyLapdog/")
     import contrastmodel.functions.masks as msk
     import contrastmodel.params.paramsDef as par
 
@@ -26,6 +27,10 @@ if __name__ == "__main__":
     orientations = params.filt.orientations
     stdev_pixels = params.filt.stdev_pixels
 
+    dir = os.path.dirname("output/")
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+
     for o in range(len(orientations)):
         for f in range(len(stdev_pixels)):
             for o2 in range(len(orientations)):
@@ -35,13 +40,13 @@ if __name__ == "__main__":
 
                     filename = "sp-{}-{}-{}-{}.png".format(o, f, o2, f2)
                     ap_filename = "ap-{}-{}-{}-{}.png".format(o, f, o2, f2)
-                    fig = plt.imshow(tempmask)
+                    fig = plt.imshow(tempmask, interpolation="none")
                     plt.colorbar()
                     plt.suptitle(filename)
                     plt.savefig("output/" + filename)
                     plt.close()
 
-                    fig = plt.imshow(tempmask_ap)
+                    fig = plt.imshow(tempmask_ap, interpolation="none")
                     plt.colorbar()
                     plt.suptitle(ap_filename)
                     plt.savefig("output/" + ap_filename)
