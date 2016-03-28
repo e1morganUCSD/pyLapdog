@@ -10,6 +10,7 @@ import numpy as np
 def _gauss(x, std):
     """
     Generates a 1D gaussian
+
     :param numpy.core.multiarray.ndarray x: 1D array of values to be Gaussianed
     :param float std: standard deviation of Gaussian
     :return: 1D Gaussian
@@ -23,6 +24,7 @@ def _gauss(x, std):
 def _d2gauss(n1, std1, n2, std2, theta):
     """
     Generates a 2D Gaussian with size n1*n2.
+
     :param int n1: number of rows in the Gaussian
     :param float std1: standard deviation along the width? of the filter
     :param int n2: number of columns in the Gaussian
@@ -63,6 +65,7 @@ def _d2gauss(n1, std1, n2, std2, theta):
 def gen_odog(rows, cols, row_std, col_std, sr1, sr2, theta, center_weight):
     """
     Generates a 2D Oriented Difference of Gaussian (ODOG) filter
+
     :param int rows: number of rows in the filter
     :param int cols: number of columns in the filter
     :param float row_std: standard deviation in the vertical direction
@@ -87,6 +90,7 @@ def trimfilt(filt, threshold):
     """
     flattens values between +threshold and -threshold to 0, then deletes
     all-zero rows from all sides of 2D array
+
     :param numpy.core.multiarray.ndarray filt: filter to be flattened
     :param float threshold: values between positive and negative threshold
         become 0

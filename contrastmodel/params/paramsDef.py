@@ -130,6 +130,7 @@ class FilterParams:
 
     def _gen_filters_odog(self):
         """
+        generates ODOG filters for all orientations and frequencies
 
         :return: Dictionary of ODOG filters, indexed by [o][f], where o =
             filter orientation, f = filter frequency
@@ -160,7 +161,7 @@ class FilterParams:
 
     def _print_filts(self):
         """
-        prints filter figures
+        prints filter figures to image files and saves them
 
         """
         print("Generating filter files in " + self.mainDir)

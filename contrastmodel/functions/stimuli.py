@@ -13,7 +13,7 @@ from progressbar import ProgressBar, Bar, Percentage
 
 class Stim:
     """
-    Stimulus processed by model
+    Stimulus processed by model - also holds filter responses to each stimulus
     """
     def __init__(self, stimtype, params, variant=""):
         """
@@ -211,6 +211,7 @@ class Stim:
 
     def _print_filter_responses(self, params):
         """
+        Prints filter responses to stimulus to image file
 
         :param contrastmodel.params.paramsDef.FilterParams params: filter
             parameters and filter arrays
@@ -1191,6 +1192,7 @@ def _grow_region(i_start, j_start, mask, reg_num):
 
 def _gen_filter_response(params, img):
     """
+    gets response of each filter to the stimulus
 
     :param par.FilterParams params: filter parameters and images
     :param numpy.core.multiarray.ndarray img: stimulus array
@@ -1235,6 +1237,8 @@ def _gen_filter_response(params, img):
 
 def _normalized_conv(img, filt):
     """
+    Performs FFT-based normalization on filter and image, with normalization so that a value of 1 in the response
+    represents maximum possible response from filter to stimulus.
 
     :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
     :param numpy.core.multiarray.ndarray filt: filter to convolve with

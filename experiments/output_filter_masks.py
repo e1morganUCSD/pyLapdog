@@ -1,3 +1,7 @@
+"""
+generates set of masks for default filters, saves them to files, then opens them and generates images for each mask
+"""
+
 import matplotlib.pyplot as plt
 import cPickle as pickle
 
@@ -5,18 +9,18 @@ if __name__ == "__main__":
     import sys
     import os
 
-    sys.path.insert(0, "/Users/Eric/PycharmProjects/pyLapdog/")
+    sys.path.insert(0, "/home/AD/e1morgan/PycharmProjects/pyLapdog/")
     import contrastmodel.functions.masks as msk
     import contrastmodel.params.paramsDef as par
 
     params = par.FilterParams()
 
-    # # reduce the number of options so it processes more quickly
-    # params.filt.orientations = range(0, 89, 30)
-    # params.filt.stdev_pixels = [4.0, 8.0, 16.0]
+    # reduce the number of options so it processes more quickly
+    params.filt_orientations = range(0, 89, 30)
+    params.filt_stdev_pixels = [4.0, 8.0, 16.0]
 
-    # print("Generating masks...")
-    # msk.generate_correlation_mask_fft(params)
+    print("Generating masks...")
+    msk.generate_correlation_mask_fft(params)
 
     print("loading filtermasks from file...")
     filtermasks = pickle.load(open("filtermasks_FFT.pkl", mode="rb"))
@@ -51,5 +55,4 @@ if __name__ == "__main__":
                     plt.suptitle(ap_filename)
                     plt.savefig("output/" + ap_filename)
                     plt.close()
-
 

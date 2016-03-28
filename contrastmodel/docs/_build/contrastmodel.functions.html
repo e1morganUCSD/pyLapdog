@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>contrastmodel.functions package &mdash; contrastmodel 0.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="contrastmodel 0.5 documentation" href="index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="contrastmodel-functions-package">
+<h1>contrastmodel.functions package<a class="headerlink" href="#contrastmodel-functions-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-contrastmodel.functions.filtergen">
+<span id="contrastmodel-functions-filtergen-module"></span><h2>contrastmodel.functions.filtergen module<a class="headerlink" href="#module-contrastmodel.functions.filtergen" title="Permalink to this headline">¶</a></h2>
+<p>This module contains functions used for generation of ODOG and Gabor filters</p>
+<dl class="function">
+<dt id="contrastmodel.functions.filtergen.gen_odog">
+<code class="descclassname">contrastmodel.functions.filtergen.</code><code class="descname">gen_odog</code><span class="sig-paren">(</span><em>rows</em>, <em>cols</em>, <em>row_std</em>, <em>col_std</em>, <em>sr1</em>, <em>sr2</em>, <em>theta</em>, <em>center_weight</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.filtergen.gen_odog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a 2D Oriented Difference of Gaussian (ODOG) filter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>rows</strong> (<em>int</em>) &#8211; number of rows in the filter</li>
+<li><strong>cols</strong> (<em>int</em>) &#8211; number of columns in the filter</li>
+<li><strong>row_std</strong> (<em>float</em>) &#8211; standard deviation in the vertical direction
+before rotation</li>
+<li><strong>col_std</strong> (<em>float</em>) &#8211; standard deviation in the horizontal direction
+before rotation</li>
+<li><strong>sr1</strong> (<em>float</em>) &#8211; scaling factor for row_std</li>
+<li><strong>sr2</strong> (<em>float</em>) &#8211; scaling factor for col_std</li>
+<li><strong>theta</strong> (<em>float</em>) &#8211; angle to which the filter is rotated counterclockwise</li>
+<li><strong>center_weight</strong> (<em>float</em>) &#8211; scaling factor for the peak of the Gaussian</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">2D Difference-Of-Gaussian filter</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.core.multiarray.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="contrastmodel.functions.filtergen.trimfilt">
+<code class="descclassname">contrastmodel.functions.filtergen.</code><code class="descname">trimfilt</code><span class="sig-paren">(</span><em>filt</em>, <em>threshold</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.filtergen.trimfilt" title="Permalink to this definition">¶</a></dt>
+<dd><p>flattens values between +threshold and -threshold to 0, then deletes
+all-zero rows from all sides of 2D array</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>filt</strong> (<em>numpy.core.multiarray.ndarray</em>) &#8211; filter to be flattened</li>
+<li><strong>threshold</strong> (<em>float</em>) &#8211; values between positive and negative threshold
+become 0</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">flattened filter</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.core.multiarray.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-contrastmodel.functions.imaging">
+<span id="contrastmodel-functions-imaging-module"></span><h2>contrastmodel.functions.imaging module<a class="headerlink" href="#module-contrastmodel.functions.imaging" title="Permalink to this headline">¶</a></h2>
+<p>This module contains functions for generating image files</p>
+<dl class="function">
+<dt id="contrastmodel.functions.imaging.generate_image">
+<code class="descclassname">contrastmodel.functions.imaging.</code><code class="descname">generate_image</code><span class="sig-paren">(</span><em>img</em>, <em>title</em>, <em>filename</em>, <em>img_dir</em>, <em>cmap='jet'</em>, <em>maximize=False</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.imaging.generate_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>generates figure image from array and saves it to file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>img</strong> (<em>numpy.core.multiarray.ndarray</em>) &#8211; array of values to be displayed</li>
+<li><strong>title</strong> (<em>str</em>) &#8211; title for the figure</li>
+<li><strong>filename</strong> (<em>str</em>) &#8211; name of the file that the image will be saved to</li>
+<li><strong>img_dir</strong> (<em>str</em>) &#8211; directory the file will be saved in</li>
+<li><strong>cmap</strong> (<em>str</em>) &#8211; colormap used in rendering the figure</li>
+<li><strong>maximize</strong> (<em>bool</em>) &#8211; whether or not to maximize the figure before saving</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-contrastmodel.functions.masks">
+<span id="contrastmodel-functions-masks-module"></span><h2>contrastmodel.functions.masks module<a class="headerlink" href="#module-contrastmodel.functions.masks" title="Permalink to this headline">¶</a></h2>
+<p>This module contains functions related to generating correlation masks for
+filters</p>
+<dl class="function">
+<dt id="contrastmodel.functions.masks.generate_correlation_mask">
+<code class="descclassname">contrastmodel.functions.masks.</code><code class="descname">generate_correlation_mask</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.masks.generate_correlation_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates array of correlation values between two filters (as described
+in Troyer et al.)
+ELEMENTWISE VERSION - USES HUGE AMOUNTS OF MEMORY (&gt;20GB)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>params</strong> (<a class="reference internal" href="contrastmodel.params.html#contrastmodel.params.paramsDef.FilterParams" title="contrastmodel.params.paramsDef.FilterParams"><em>contrastmodel.params.paramsDef.FilterParams</em></a>) &#8211; model and filter
+parameters</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dictionary of correlation masks, keys in format [o][f][o2][f2],
+where o and f are orientation and frequency of postsynaptic filter,
+and o2 and f2 are orientation and frequency of presynaptic filter</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dict[int, dict[int, dict[int, dict[int,
+numpy.core.multiarray.ndarray]]]]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="contrastmodel.functions.masks.generate_correlation_mask_fft">
+<code class="descclassname">contrastmodel.functions.masks.</code><code class="descname">generate_correlation_mask_fft</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.masks.generate_correlation_mask_fft" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates array of correlation values between two filters (as described
+in Troyer et al.)
+FFT VERSION - USES THIS ONE</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>params</strong> (<a class="reference internal" href="contrastmodel.params.html#contrastmodel.params.paramsDef.FilterParams" title="contrastmodel.params.paramsDef.FilterParams"><em>contrastmodel.params.paramsDef.FilterParams</em></a>) &#8211; model and filter
+parameters</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">dictionary of correlation masks, keys in format [o][f][o2][f2],
+where o and f are orientation and frequency of postsynaptic filter,
+and o2 and f2 are orientation and frequency of presynaptic filter</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">dict[int, dict[int, dict[int, dict[int,
+numpy.core.multiarray.ndarray]]]]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-contrastmodel.functions.stimuli">
+<span id="contrastmodel-functions-stimuli-module"></span><h2>contrastmodel.functions.stimuli module<a class="headerlink" href="#module-contrastmodel.functions.stimuli" title="Permalink to this headline">¶</a></h2>
+<p>contains class definition for stimuli</p>
+<dl class="class">
+<dt id="contrastmodel.functions.stimuli.Stim">
+<em class="property">class </em><code class="descclassname">contrastmodel.functions.stimuli.</code><code class="descname">Stim</code><span class="sig-paren">(</span><em>stimtype</em>, <em>params</em>, <em>variant=''</em><span class="sig-paren">)</span><a class="headerlink" href="#contrastmodel.functions.stimuli.Stim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stimulus processed by model - also holds filter responses to each stimulus</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-contrastmodel.functions">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-contrastmodel.functions" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">contrastmodel.functions package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-contrastmodel.functions.filtergen">contrastmodel.functions.filtergen module</a></li>
+<li><a class="reference internal" href="#module-contrastmodel.functions.imaging">contrastmodel.functions.imaging module</a></li>
+<li><a class="reference internal" href="#module-contrastmodel.functions.masks">contrastmodel.functions.masks module</a></li>
+<li><a class="reference internal" href="#module-contrastmodel.functions.stimuli">contrastmodel.functions.stimuli module</a></li>
+<li><a class="reference internal" href="#module-contrastmodel.functions">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/contrastmodel.functions.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Eric Morgan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+      |
+      <a href="_sources/contrastmodel.functions.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
