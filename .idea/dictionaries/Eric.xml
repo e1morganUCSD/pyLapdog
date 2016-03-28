@@ -2,9 +2,17 @@
   <dictionary name="Eric">
     <words>
       <w>contrastmodel</w>
+      <w>convolving</w>
+      <w>coor</w>
+      <w>elementwise</w>
       <w>filt</w>
+      <w>filtermask</w>
+      <w>filtermasks</w>
       <w>gabor</w>
+      <w>gaussianed</w>
       <w>gaussians</w>
+      <w>matlab</w>
+      <w>multiarray</w>
       <w>ndarray</w>
       <w>odog</w>
       <w>postsynaptic</w>

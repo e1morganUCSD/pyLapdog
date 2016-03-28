@@ -15,8 +15,8 @@ if __name__ == "__main__":
     # params.filt.orientations = range(0, 89, 30)
     # params.filt.stdev_pixels = [4.0, 8.0, 16.0]
 
-    print("Generating masks...")
-    msk.generate_correlation_mask_fft(params)
+    # print("Generating masks...")
+    # msk.generate_correlation_mask_fft(params)
 
     print("loading filtermasks from file...")
     filtermasks = pickle.load(open("filtermasks_FFT.pkl", mode="rb"))
@@ -24,12 +24,12 @@ if __name__ == "__main__":
     print("loading ap_filtermasks from file...")
     ap_filtermasks = pickle.load(open("ap_filtermasks_FFT.pkl", mode="rb"))
 
-    orientations = params.filt.orientations
-    stdev_pixels = params.filt.stdev_pixels
+    orientations = params.filt_orientations
+    stdev_pixels = params.filt_stdev_pixels
 
-    dir = os.path.dirname("output/")
-    if not os.path.exists(dir):
-        os.mkdir(dir)
+    outputdir = os.path.dirname("output/")
+    if not os.path.exists(outputdir):
+        os.mkdir(outputdir)
 
     for o in range(len(orientations)):
         for f in range(len(stdev_pixels)):

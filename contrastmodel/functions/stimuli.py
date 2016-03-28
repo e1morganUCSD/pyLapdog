@@ -4,21 +4,36 @@ contains class definition for stimuli
 
 import numpy as np
 import math
+import contrastmodel.params.paramsDef as par
+import scipy.signal as ss
+import contrastmodel.functions.imaging as imaging
+import os
+from progressbar import ProgressBar, Bar, Percentage
 
 
 class Stim:
     """
     Stimulus processed by model
     """
-    def __init__(self, stimtype, variant=""):
+    def __init__(self, stimtype, params, variant=""):
         """
 
         :param str stimtype: type of stimulus generated
         :param str variant: type of variant (DI, DD, none)
+        :param par.FilterParams params: filter parameters and filters
         """
         self.variant = variant
         self.stimtype = stimtype
 
+        # create "friendly" name of stimulus for use in figures, folders, etc
+        self.stimname = stimtype
+        if variant != "":
+            self.stimname = self.stimname + " (" + variant + ")"
+
+        # create output directory stub for stimulus
+        self.outDir = self.stimname + "/"
+
+        # generate stimulus image
         if stimtype == "Whites":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_whites()
@@ -172,6 +187,54 @@ class Stim:
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
+
+        # convert img to single precision to save memory
+        self.img = self.img.astype('float32')
+
+        # print stimulus img
+        _filename = self.stimname + ".png"
+        _title = self.stimname
+        _outdir = params.mainDir + self.outDir
+        # make sure output dir exists
+        if not os.path.exists(_outdir):
+            os.makedirs(_outdir)
+        imaging.generate_image(self.img, _title, _filename, _outdir,
+                               cmap="gray")
+
+        # get responses of filters to stimulus
+        self.filtresponses, self.ap_filtresponses = \
+            _gen_filter_response(params, self.img)
+
+        # (optionally) print filter responses for stimulus
+        if params.verbosity > 1:
+            self._print_filter_responses(params)
+
+    def _print_filter_responses(self, params):
+        """
+
+        :param contrastmodel.params.paramsDef.FilterParams params: filter
+            parameters and filter arrays
+        """
+        outdir = params.mainDir + self.outDir
+
+        for o in range(len(params.filt_orientations)):
+            for f in range(len(params.filt_stdev_pixels)):
+                _filename = "filterresponse-{}-{}.png".format(
+                    params.filt_orientations[o], params.filt_stdev_pixels[f])
+                _title = "Initial filter response: orientation {}, frequency" \
+                         " (pixels) {}".format(params.filt_orientations[o],
+                                               params.filt_stdev_pixels[f])
+                imaging.generate_image(self.filtresponses[o][f], _title,
+                                       _filename, outdir)
+
+                _filename = "filterresponse_ap-{}-{}.png".format(
+                    params.filt_orientations[o], params.filt_stdev_pixels[f])
+                _title = "Initial AP filter response: orientation {}, " \
+                         "frequency (pixels) {}".format(
+                                                 params.filt_orientations[o],
+                                                 params.filt_stdev_pixels[f])
+                imaging.generate_image(self.filtresponses[o][f], _title,
+                                       _filename, outdir)
 
 
 def _make_whites():
@@ -832,9 +895,9 @@ def _make_zigzag():
     # draw gray patches
     square[160 + 64:160 + 64 + 32 * 3, 160:160 + 32] = 0.5
     square[256 + 64:256 + 64 + 32 * 3, 320:320 + 32] = 0.5
-    
+
     square[482 + 32:544, 448:544] = 0
-    
+
     # crop image to make it symmetric
     model = np.copy(square[new_y:y, 0:new_x])
 
@@ -883,14 +946,14 @@ def _make_jacob_1():
     for i in range(1, 4):
         for j in range(1, 7):
             if (i + j) / 2.0 == math.floor((i + j) / 2.0):
-                block[2 * 96 + (i - 1) * 32: 2 * 96 + i * 32, 
+                block[2 * 96 + (i - 1) * 32: 2 * 96 + i * 32,
                       (j - 1) * 96: j * 96] = 0
 
     # bottom row
     for i in range(1, 4):
         for j in range(1, 7):
             if (i + j) / 2.0 == math.floor((i + j) / 2.0):
-                block[4 * 96 + (i - 1) * 32: 4 * 96 + i * 32, 
+                block[4 * 96 + (i - 1) * 32: 4 * 96 + i * 32,
                       (j - 1) * 96: j * 96] = 0
 
     # on rows 2 and 4 make vertical blocks:
@@ -1121,19 +1184,85 @@ def _grow_region(i_start, j_start, mask, reg_num):
     return mask
 
 
+def _gen_filter_response(params, img):
+    """
+
+    :param par.FilterParams params: filter parameters and images
+    :param numpy.core.multiarray.ndarray img: stimulus array
+    :return: dictionaries of filter responses and AP filter responses
+    :rtype: (dict[int, dict[int, numpy.core.multiarray.ndarray]],
+        dict[int, dict[int, numpy.core.multiarray.ndarray]]
+    """
+
+    print("Getting responses of filters to stimulus...")
+
+    # create a progress bar, since this will likely take a while
+    pbar_maxval = len(params.filt_orientations) * len(params.filt_stdev_pixels)
+    pbar = ProgressBar(widgets=[Percentage(), Bar()],
+                       maxval=pbar_maxval).start()
+    pbar_count = 1
+
+    filtresponse = {}
+    ap_filtresponse = {}
+    for o in range(len(params.filt_orientations)):
+        filtresponse[o] = {}
+        ap_filtresponse[o] = {}
+        for f in range(len(params.filt_stdev_pixels)):
+            filt = params.filts[o][f]
+            ap_filt = params.ap_filts[o][f]
+
+            # since the filters use -1 to represent dark sensitivity and +1
+            # to represent light sensitivity, their stimulus convolution
+            # results in values ranging from -1 to 1, but this needs to be
+            # re-ranged to between 0 and 1 to reflect that the responses are
+            #  levels of response from the filter to the stimulus
+            filtresponse[o][f] = (_normalized_conv(img, filt)+1.0) / 2.0
+            ap_filtresponse[o][f] = 1 - ((_normalized_conv(img,
+                                                           ap_filt)+1.0) / 2.0)
+
+            pbar.update(pbar_count)
+            pbar_count += 1
+
+    pbar.finish()
+
+    return filtresponse, ap_filtresponse
+
+
+def _normalized_conv(img, filt):
+    """
+
+    :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
+    :param numpy.core.multiarray.ndarray filt: filter to convolve with
+    :return: result of convolution
+    :rtype: numpy.core.multiarray.ndarray
+    """
+    # get normalization info (convolving the filter with a matrix of 1s gives
+    # us the max value of the convolution with that filter - dividing the end
+    # convolution result by these max values gives us a normalized response)
+    normimg = np.ones(np.shape(filt))
+    filt = np.fliplr(np.flipud(filt))
+    normtemp = ss.fftconvolve(normimg, filt, mode="same")
+
+    return ss.fftconvolve(img, filt, mode="same") / normtemp
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
+    filtparams = par.FilterParams(maindir="../")
+
+    # for stimname in ["Whites", "Howe var B"]:
     for stimname in ["Whites", "Howe var B", "Howe var D", "Howe", "SBC",
                      "Anderson", "Rings", "Radial", "Zigzag", "Jacob 1",
                      "Jacob 2"]:
-        for testvariant in ["", "DI", "DD"]:
-            temp = Stim(stimname, testvariant)
 
-            filename = temp.stimtype + temp.variant + ".png"
+        for testvariant in ["", "DI", "DD"]:
+            temp = Stim(stimname, filtparams, variant=testvariant)
+
+            tempfilename = temp.stimtype + temp.variant + ".png"
             outputdir = "../../experiments/output/"
             fig = plt.imshow(temp.img, interpolation="none", cmap="gray")
             plt.colorbar()
-            plt.suptitle(filename)
-            plt.savefig(outputdir + filename)
+            plt.suptitle(tempfilename)
+            plt.savefig(outputdir + tempfilename)
             plt.close()

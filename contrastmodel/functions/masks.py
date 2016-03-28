@@ -156,6 +156,9 @@ def generate_correlation_mask(params):
                                       params.filt_neglen, orientations[o] *
                                       (math.pi/180), params.filt_centerW)
 
+            # normalize filter to max response of 1
+            post_filter /= np.max(np.abs(post_filter))
+
             # trim filter to reduce processing of unnecessary near-zero values
             post_filter = fg.trimfilt(post_filter, np.max(np.abs(
                 post_filter)) * 0.01)
@@ -174,6 +177,9 @@ def generate_correlation_mask(params):
                                              params.filt_neglen,
                                              orientations[o2] * (math.pi/180),
                                              params.filt_centerW)
+
+                    # normalize filter to max response of 1
+                    pre_filter /= np.max(np.abs(pre_filter))
 
                     # trim filter to reduce processing of near-zero values
                     pre_filter = fg.trimfilt(pre_filter, np.max(np.abs(
@@ -208,7 +214,8 @@ def generate_correlation_mask_fft(params):
     :return: dictionary of correlation masks, keys in format [o][f][o2][f2],
         where o and f are orientation and frequency of postsynaptic filter,
         and o2 and f2 are orientation and frequency of presynaptic filter
-    :rtype: dictionary
+    :rtype: dict[int, dict[int, dict[int, dict[int,
+        numpy.core.multiarray.ndarray]]]]
     """
 
     # pull out useful information from params
@@ -246,6 +253,9 @@ def generate_correlation_mask_fft(params):
                                       params.filt_neglen, orientations[o] *
                                       (math.pi/180), params.filt_centerW)
 
+            # normalize filter to max response of 1
+            post_filter /= np.max(np.abs(post_filter))
+
             # no filter trimming for FFT version
             # # trim filter to reduce processing of unnecessary near-zero vals
             # post_filter = fg.trimfilt(post_filter, np.max(np.abs(
@@ -265,6 +275,9 @@ def generate_correlation_mask_fft(params):
                                              params.filt_neglen,
                                              orientations[o2] * (math.pi/180),
                                              params.filt_centerW)
+
+                    # normalize filter to max response of 1
+                    pre_filter /= np.max(np.abs(pre_filter))
 
                     # no filter trimming for FFT version
                     # # trim filter to reduce processing of near-zero values

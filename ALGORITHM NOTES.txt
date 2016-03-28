@@ -7,3 +7,9 @@ Masks:
 
 4. masks are arranged in the dictionary as filtermasks[o][f][o2][f2]: [o] and [f] are the orientation index and frequency index of the "postsynaptic" filter, and [o2] and [f2] are the indices for the presynaptic filter
 
+
+
+structure:
+1. params now holds all the filters and generates them when new params is generated
+
+2.
