@@ -9,7 +9,7 @@ if __name__ == "__main__":
     import contrastmodel.functions.masks as msk
     import contrastmodel.params.paramsDef as par
 
-    params = par.Params()
+    params = par.FilterParams()
 
     # # reduce the number of options so it processes more quickly
     # params.filt.orientations = range(0, 89, 30)

@@ -1,3 +1,8 @@
+"""
+This module contains functions related to generating correlation masks for
+filters
+"""
+
 import numpy as np
 import math
 import scipy.ndimage as ndi
@@ -22,11 +27,13 @@ def _compare_filters(pre_filter, post_filter):
     spatially overlap in filters a and b
     c(a,b) = c'(a,b)/sqrt(c'(a,a), c'(b,b))
 
-    :type post_filter: numpy.ndarray(float32)
-    :type pre_filter: numpy.ndarray(float32)
-    :param pre_filter: numpy.ndarray
-    ;param post_filter: numpy.ndarray
-    :return: numpy.ndarray
+    :param numpy.core.multiarray.ndarray pre_filter: pre-synaptic filter
+        that inhibits or excites the post-synaptic filter
+    :param numpy.core.multiarray.ndarray post_filter: post-synaptic filter
+        located at the center of the mask
+    :return: map of correlation values for pre-synaptic filter centered at
+        each point to post-synaptic filter located at center of map
+    :rtype: numpy.core.multiarray.ndarray
     """
 
     # # create output matrices to hold results
@@ -50,7 +57,7 @@ def _compare_filters(pre_filter, post_filter):
     post_filter = np.float32(post_filter)
 
     return ndi.convolve(post_filter, pre_filter, mode='constant', cval=0.0) \
-           / correlation_denominator
+        / correlation_denominator
 
 
 def _compare_filters_fft(pre_filter, post_filter):
@@ -66,11 +73,13 @@ def _compare_filters_fft(pre_filter, post_filter):
     spatially overlap in filters a and b
     c(a,b) = c'(a,b)/sqrt(c'(a,a), c'(b,b))
 
-    :type post_filter: numpy.ndarray(float32)
-    :type pre_filter: numpy.ndarray(float32)
-    :param pre_filter: numpy.ndarray
-    ;param post_filter: numpy.ndarray
-    :return: numpy.ndarray
+    :param numpy.core.multiarray.ndarray pre_filter: pre-synaptic filter
+        that inhibits or excites the post-synaptic filter
+    :param numpy.core.multiarray.ndarray post_filter: post-synaptic filter
+        located at the center of the mask
+    :return: map of correlation values for pre-synaptic filter centered at
+        each point to post-synaptic filter located at center of map
+    :rtype: numpy.core.multiarray.ndarray
     """
 
     # # create output matrices to hold results
@@ -94,7 +103,7 @@ def _compare_filters_fft(pre_filter, post_filter):
     post_filter = np.float32(post_filter)
 
     return ss.fftconvolve(post_filter, pre_filter, mode="same") \
-           / correlation_denominator
+        / correlation_denominator
 
 
 def generate_correlation_mask(params):
@@ -103,14 +112,18 @@ def generate_correlation_mask(params):
     in Troyer et al.)
     ELEMENTWISE VERSION - USES HUGE AMOUNTS OF MEMORY (>20GB)
 
-    :rtype: dict
-    :param params: contrastmodel.params.Params
-    :return: numpy.ndarray
+    :param contrastmodel.params.paramsDef.FilterParams params: model and filter
+        parameters
+    :return: dictionary of correlation masks, keys in format [o][f][o2][f2],
+        where o and f are orientation and frequency of postsynaptic filter,
+        and o2 and f2 are orientation and frequency of presynaptic filter
+    :rtype: dict[int, dict[int, dict[int, dict[int,
+        numpy.core.multiarray.ndarray]]]]
     """
 
     # pull out useful information from params
-    orientations = params.filt.orientations
-    stdev_pixels = params.filt.stdev_pixels
+    orientations = params.filt_orientations
+    stdev_pixels = params.filt_stdev_pixels
 
     # create cell arrays to put things into
     # filtermasks = np.zeros((len(orientations), len(stdev_pixels),
@@ -137,11 +150,11 @@ def generate_correlation_mask(params):
         for f in range(len(stdev_pixels)):
             filtermasks[o][f] = {}
             ap_filtermasks[o][f] = {}
-            post_filter = fg.gen_ODOG(params.filt.y, params.filt.x,
+            post_filter = fg.gen_odog(params.filt_rows, params.filt_cols,
                                       stdev_pixels[f], stdev_pixels[f],
-                                      params.filt.negwidth,
-                                      params.filt.neglen, orientations[o] *
-                                      (math.pi/180), params.filt.centerW)
+                                      params.filt_negwidth,
+                                      params.filt_neglen, orientations[o] *
+                                      (math.pi/180), params.filt_centerW)
 
             # trim filter to reduce processing of unnecessary near-zero values
             post_filter = fg.trimfilt(post_filter, np.max(np.abs(
@@ -153,12 +166,14 @@ def generate_correlation_mask(params):
                 filtermasks[o][f][o2] = {}
                 ap_filtermasks[o][f][o2] = {}
                 for f2 in range(len(stdev_pixels)):
-                    pre_filter = fg.gen_ODOG(params.filt.y, params.filt.x,
-                                             stdev_pixels[f2], stdev_pixels[f2],
-                                             params.filt.negwidth,
-                                             params.filt.neglen, orientations[o2] *
-                                             (math.pi/180),
-                                             params.filt.centerW)
+                    pre_filter = fg.gen_odog(params.filt_rows,
+                                             params.filt_cols,
+                                             stdev_pixels[f2],
+                                             stdev_pixels[f2],
+                                             params.filt_negwidth,
+                                             params.filt_neglen,
+                                             orientations[o2] * (math.pi/180),
+                                             params.filt_centerW)
 
                     # trim filter to reduce processing of near-zero values
                     pre_filter = fg.trimfilt(pre_filter, np.max(np.abs(
@@ -174,7 +189,8 @@ def generate_correlation_mask(params):
     pbar.finish()
 
     pickle.dump(filtermasks, open("filtermasks.pkl", mode='wb'), protocol=2)
-    pickle.dump(ap_filtermasks, open("ap_filtermasks.pkl", mode='wb'), protocol=2)
+    pickle.dump(ap_filtermasks, open("ap_filtermasks.pkl", mode='wb'),
+                protocol=2)
     # np.save("filtermasks_nonFFT.npy", filtermasks)
     # np.save("ap_filtermasks_nonFFT.npy", ap_filtermasks)
 
@@ -187,14 +203,17 @@ def generate_correlation_mask_fft(params):
     in Troyer et al.)
     FFT VERSION - USES THIS ONE
 
-    :rtype: dict
-    :param params: contrastmodel.params.Params
-    :return: numpy.ndarray
+    :param contrastmodel.params.paramsDef.FilterParams params: model and filter
+        parameters
+    :return: dictionary of correlation masks, keys in format [o][f][o2][f2],
+        where o and f are orientation and frequency of postsynaptic filter,
+        and o2 and f2 are orientation and frequency of presynaptic filter
+    :rtype: dictionary
     """
 
     # pull out useful information from params
-    orientations = params.filt.orientations
-    stdev_pixels = params.filt.stdev_pixels
+    orientations = params.filt_orientations
+    stdev_pixels = params.filt_stdev_pixels
 
     # create cell arrays to put things into
     # filtermasks = np.zeros((len(orientations), len(stdev_pixels),
@@ -221,14 +240,14 @@ def generate_correlation_mask_fft(params):
         for f in range(len(stdev_pixels)):
             filtermasks[o][f] = {}
             ap_filtermasks[o][f] = {}
-            post_filter = fg.gen_ODOG(params.filt.y, params.filt.x,
+            post_filter = fg.gen_odog(params.filt_rows, params.filt_cols,
                                       stdev_pixels[f], stdev_pixels[f],
-                                      params.filt.negwidth,
-                                      params.filt.neglen, orientations[o] *
-                                      (math.pi/180), params.filt.centerW)
+                                      params.filt_negwidth,
+                                      params.filt_neglen, orientations[o] *
+                                      (math.pi/180), params.filt_centerW)
 
             # no filter trimming for FFT version
-            # # trim filter to reduce processing of unnecessary near-zero values
+            # # trim filter to reduce processing of unnecessary near-zero vals
             # post_filter = fg.trimfilt(post_filter, np.max(np.abs(
             #     post_filter)) * 0.01)
 
@@ -238,12 +257,14 @@ def generate_correlation_mask_fft(params):
                 filtermasks[o][f][o2] = {}
                 ap_filtermasks[o][f][o2] = {}
                 for f2 in range(len(stdev_pixels)):
-                    pre_filter = fg.gen_ODOG(params.filt.y, params.filt.x,
-                                             stdev_pixels[f2], stdev_pixels[f2],
-                                             params.filt.negwidth,
-                                             params.filt.neglen, orientations[o2] *
-                                             (math.pi/180),
-                                             params.filt.centerW)
+                    pre_filter = fg.gen_odog(params.filt_rows,
+                                             params.filt_cols,
+                                             stdev_pixels[f2],
+                                             stdev_pixels[f2],
+                                             params.filt_negwidth,
+                                             params.filt_neglen,
+                                             orientations[o2] * (math.pi/180),
+                                             params.filt_centerW)
 
                     # no filter trimming for FFT version
                     # # trim filter to reduce processing of near-zero values
@@ -275,31 +296,27 @@ def generate_correlation_mask_fft(params):
     return filtermasks, ap_filtermasks
 
 
-
 # ---TESTING---
 
 if __name__ == "__main__":
     import contrastmodel.params.paramsDef as par
 
-    params = par.Params()
+    filterparams = par.FilterParams()
 
     # reduce the number of options so it processes more quickly
-    params.filt.orientations = range(0, 89, 30)
-    params.filt.stdev_pixels = [4.0, 8.0, 16.0]
+    filterparams.filt_orientations = range(0, 89, 30)
+    filterparams.filt_stdev_pixels = [4.0, 8.0, 16.0]
 
     start = time.time()
-    filtermasks, ap_filtermasks = generate_correlation_mask_fft(params)
+    filtermasks_test, ap_filtermasks_test = generate_correlation_mask_fft(
+        filterparams)
 
     end = time.time()
     print("elapsed time:")
     print(end - start)
 
-    test = filtermasks[1][2][2][1]
+    test = filtermasks_test[1][2][2][1]
     import matplotlib.pyplot as plt
     fig = plt.imshow(test, interpolation="none")
     plt.colorbar()
     plt.show()
-
-
-
-
