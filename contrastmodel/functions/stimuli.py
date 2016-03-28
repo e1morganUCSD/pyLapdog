@@ -219,20 +219,25 @@ class Stim:
 
         for o in range(len(params.filt_orientations)):
             for f in range(len(params.filt_stdev_pixels)):
-                _filename = "filterresponse-{}-{}.png".format(
-                    params.filt_orientations[o], params.filt_stdev_pixels[f])
-                _title = "Initial filter response: orientation {}, frequency" \
-                         " (pixels) {}".format(params.filt_orientations[o],
-                                               params.filt_stdev_pixels[f])
+                _filename = params.filttype + "_filterresponse-{}-" \
+                    "{}.png".format(params.filt_orientations[o],
+                                    params.filt_stdev_pixels[f])
+                _title = "Initial {} filter response: orientation {}, " \
+                         "frequency " \
+                         "(pixels) {}".format(params.filttype,
+                                              params.filt_orientations[o],
+                                              params.filt_stdev_pixels[f],)
                 imaging.generate_image(self.filtresponses[o][f], _title,
                                        _filename, outdir)
 
-                _filename = "filterresponse_ap-{}-{}.png".format(
-                    params.filt_orientations[o], params.filt_stdev_pixels[f])
-                _title = "Initial AP filter response: orientation {}, " \
-                         "frequency (pixels) {}".format(
-                                                 params.filt_orientations[o],
-                                                 params.filt_stdev_pixels[f])
+                _filename = params.filttype + "_filterresponse_ap-{}-" \
+                    "{}.png".format(params.filt_orientations[o],
+                                    params.filt_stdev_pixels[f])
+                _title = "Initial AP {} filter response: orientation {}, " \
+                         "frequency " \
+                         "(pixels) {}".format(params.filttype,
+                                              params.filt_orientations[o],
+                                              params.filt_stdev_pixels[f])
                 imaging.generate_image(self.filtresponses[o][f], _title,
                                        _filename, outdir)
 

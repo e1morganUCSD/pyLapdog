@@ -35,6 +35,8 @@ class FilterParams:
             if "~" in self.mainDir:
                 self.mainDir = os.path.expanduser(self.mainDir)
 
+        self.filttype = filttype
+
         # ---constants---
         # number of degrees of visual angle per pixel
         self.const_DEG_PER_PIXEL = 0.03125
