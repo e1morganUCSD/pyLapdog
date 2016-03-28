@@ -1,0 +1,9 @@
+Masks:
+1. using FFT for mask generation, as it is much faster than the elementwise method.  FFT is said to be provably mathematically equivalent to the sum of the products of all of the overlapping elements.
+
+2. mask values range from -1 to 1, but 0 is not considered a midpoint, but an endpoint - excitatory connections are the positive parts of the masks, and inhibitory connections are the negative part of the masks.
+
+3. mask values are normalized to 1 or -1 as the max (min) value
+
+4. masks are arranged in the dictionary as filtermasks[o][f][o2][f2]: [o] and [f] are the orientation index and frequency index of the "postsynaptic" filter, and [o2] and [f2] are the indices for the presynaptic filter
+

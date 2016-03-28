@@ -1,3 +1,7 @@
+"""
+This module contains functions used for generation of ODOG and Gabor filters
+"""
+
 import math
 import numpy as np
 
@@ -6,31 +10,31 @@ import numpy as np
 def _gauss(x, std):
     """
     Generates a 1D gaussian
-    :param x: np.array
-    :param std: float
-    :return: np.array
+    :param numpy.core.multiarray.ndarray x: 1D array of values to be Gaussianed
+    :param float std: standard deviation of Gaussian
+    :return: 1D Gaussian
+    :rtype: numpy.core.multiarray.ndarray
     """
 
-    return np.exp(-(x**2) / (2 * (std**2))) / (std * math.sqrt(2 * math.pi))
+    return np.exp(-(x ** 2) / (2 * (std ** 2))) / (
+            std * math.sqrt(2 * math.pi))
 
 
 def _d2gauss(n1, std1, n2, std2, theta):
     """
-    Generates a 2D Gaussian with size n1*n2.  Theta is the angle that the
-    filter is rotated counterclockwise, std1 and std2 are the standard
-    deviations of the Gaussian functions, with std2 being the length of the
-    filter along the rotated axis.
-    :param n1: int
-    :param std1: float
-    :param n2: int
-    :param std2: float
-    :param theta: float
-    :return: np.array
+    Generates a 2D Gaussian with size n1*n2.
+    :param int n1: number of rows in the Gaussian
+    :param float std1: standard deviation along the width? of the filter
+    :param int n2: number of columns in the Gaussian
+    :param float std2: standard deviation along the length of the filter
+    :param float theta: angle that the Gaussian is rotated counterclockwise
+    :return: 2D Gaussian
+    :rtype: numpy.core.multiarray.ndarray
     """
 
     # create transformation matrix for rotation
     r = np.array([[math.cos(theta), -math.sin(theta)],
-                     [math.sin(theta), math.cos(theta)]])
+                  [math.sin(theta), math.cos(theta)]])
 
     temp = np.array(range(-(n1 - 1) / 2, n1 / 2))
     Xs = np.tile(temp, (n2, 1))
@@ -39,8 +43,8 @@ def _d2gauss(n1, std1, n2, std2, theta):
     Ys = np.tile(temp, (1, n1))  # creates an len(temp) x n1 array?
 
     # reshape into vectors
-    Xs = np.reshape(Xs, (1, n1*n2), order='F').copy()
-    Ys = np.reshape(Ys, (1, n1*n2), order='F').copy()
+    Xs = np.reshape(Xs, (1, n1 * n2), order='F').copy()
+    Ys = np.reshape(Ys, (1, n1 * n2), order='F').copy()
 
     coor = np.dot(r, np.vstack((Xs, Ys)))
 
@@ -56,23 +60,26 @@ def _d2gauss(n1, std1, n2, std2, theta):
 
 
 # ---FILTER GENERATION FUNCTIONS---
-def gen_ODOG(rows, cols, row_std, col_std, sr1, sr2, theta, centerWeight):
+def gen_odog(rows, cols, row_std, col_std, sr1, sr2, theta, center_weight):
     """
     Generates a 2D Oriented Difference of Gaussian (ODOG) filter
-    :param rows: int
-    :param cols: int
-    :param row_std: float
-    :param col_std: float
-    :param sr1: float
-    :param sr2: float
-    :param theta: float
-    :param centerWeight: float
-    :return: numpy.array
+    :param int rows: number of rows in the filter
+    :param int cols: number of columns in the filter
+    :param float row_std: standard deviation in the vertical direction
+        before rotation
+    :param float col_std: standard deviation in the horizontal direction
+        before rotation
+    :param float sr1: scaling factor for row_std
+    :param float sr2: scaling factor for col_std
+    :param float theta: angle to which the filter is rotated counterclockwise
+    :param float center_weight: scaling factor for the peak of the Gaussian
+    :return: 2D Difference-Of-Gaussian filter
+    :rtype: numpy.core.multiarray.ndarray
     """
 
-    return centerWeight * (_d2gauss(rows, row_std, cols, col_std, theta) -
-                           _d2gauss(rows, row_std * sr1, cols, col_std * sr2,
-                                    theta))
+    return center_weight * (_d2gauss(rows, row_std, cols, col_std, theta) -
+                            _d2gauss(rows, row_std * sr1, cols, col_std * sr2,
+                                     theta))
 
 
 # ---FILTER HELPER FUNCTIONS---
@@ -80,9 +87,11 @@ def trimfilt(filt, threshold):
     """
     flattens values between +threshold and -threshold to 0, then deletes
     all-zero rows from all sides of 2D array
-    :param filt: numpy.array
-    :param threshold: float
-    :return: numpy.array
+    :param numpy.core.multiarray.ndarray filt: filter to be flattened
+    :param float threshold: values between positive and negative threshold
+        become 0
+    :return: flattened filter
+    :rtype: numpy.core.multiarray.ndarray
     """
     filt[(filt < threshold) & (filt > -threshold)] = 0
 
@@ -101,7 +110,6 @@ def trimfilt(filt, threshold):
 
         # if top and bottom meet, the filter is all zeros
         if topindex - bottomindex > 0:
-            alldone = True
             return filt  # we can't trim an all zeros filter
 
     trimmed_filt = filt[topindex:bottomindex, :].copy()
@@ -137,7 +145,7 @@ if __name__ == "__main__":
     plt.show()
 
     print("now generating ODOG filter")
-    test2 = gen_ODOG(500, 500, 8.4, 8.4, 1.0, 2.0, 60, 1.0)
+    test2 = gen_odog(500, 500, 8.4, 8.4, 1.0, 2.0, 60, 1.0)
 
     fig2 = plt.imshow(test2)
     plt.colorbar()
@@ -149,7 +157,3 @@ if __name__ == "__main__":
     fig3 = plt.imshow(test3)
     plt.colorbar()
     plt.show()
-
-
-
-
