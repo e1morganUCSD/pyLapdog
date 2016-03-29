@@ -26,12 +26,12 @@ class Stim:
         self.stimtype = stimtype
 
         # create "friendly" name of stimulus for use in figures, folders, etc
-        self.stimname = stimtype
+        self.friendlyname = stimtype
         if variant != "":
-            self.stimname = self.stimname + " (" + variant + ")"
+            self.friendlyname = self.friendlyname + " (" + variant + ")"
 
         # create output directory stub for stimulus
-        self.outDir = self.stimname + "/"
+        self.outDir = self.friendlyname + "/"
 
         # generate stimulus image
         if stimtype == "Whites":
@@ -192,8 +192,8 @@ class Stim:
         self.img = self.img.astype('float32')
 
         # print stimulus img
-        _filename = self.stimname + ".png"
-        _title = self.stimname
+        _filename = self.friendlyname + ".png"
+        _title = self.friendlyname
         _outdir = params.mainDir + self.outDir
         # make sure output dir exists
         if not os.path.exists(_outdir):
@@ -1260,7 +1260,7 @@ if __name__ == '__main__':
 
     filtparams = par.FilterParams(maindir="../")
 
-    # for stimname in ["Whites", "Howe var B"]:
+    # for friendlyname in ["Whites", "Howe var B"]:
     for stimname in ["Whites", "Howe var B", "Howe var D", "Howe", "SBC",
                      "Anderson", "Rings", "Radial", "Zigzag", "Jacob 1",
                      "Jacob 2"]:
