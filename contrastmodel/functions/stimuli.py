@@ -11,7 +11,7 @@ import os
 from progressbar import ProgressBar, Bar, Percentage
 
 
-class Stim:
+class Stim(object):
     """
     Stimulus processed by model - also holds filter responses to each stimulus
     """
@@ -24,6 +24,7 @@ class Stim:
         """
         self.variant = variant
         self.stimtype = stimtype
+        self.params = params
 
         # create "friendly" name of stimulus for use in figures, folders, etc
         self.friendlyname = stimtype
@@ -194,7 +195,7 @@ class Stim:
         # print stimulus img
         _filename = self.friendlyname + ".png"
         _title = self.friendlyname
-        _outdir = params.mainDir + self.outDir
+        _outdir = self.params.mainDir + self.outDir
         # make sure output dir exists
         if not os.path.exists(_outdir):
             os.makedirs(_outdir)
@@ -203,42 +204,41 @@ class Stim:
 
         # get responses of filters to stimulus
         self.filtresponses, self.ap_filtresponses = \
-            _gen_filter_response(params, self.img)
+            _gen_filter_response(self.params, self.img)
 
         # (optionally) print filter responses for stimulus
         if params.verbosity > 1:
-            self._print_filter_responses(params)
+            self._print_filter_responses()
 
-    def _print_filter_responses(self, params):
+    def _print_filter_responses(self):
         """
         Prints filter responses to stimulus to image file
 
-        :param contrastmodel.params.paramsDef.FilterParams params: filter
-            parameters and filter arrays
+        
         """
-        outdir = params.mainDir + self.outDir
+        outdir = self.params.mainDir + self.outDir
 
-        for o in range(len(params.filt_orientations)):
-            for f in range(len(params.filt_stdev_pixels)):
-                _filename = params.filttype + "_filterresponse-{}-" \
-                    "{}.png".format(params.filt_orientations[o],
-                                    params.filt_stdev_pixels[f])
+        for o in range(len(self.params.filt_orientations)):
+            for f in range(len(self.params.filt_stdev_pixels)):
+                _filename = self.params.filttype + "_filterresponse-{}-" \
+                    "{}.png".format(self.params.filt_orientations[o],
+                                    self.params.filt_stdev_pixels[f])
                 _title = "Initial {} filter response: orientation {}, " \
                          "frequency " \
-                         "(pixels) {}".format(params.filttype,
-                                              params.filt_orientations[o],
-                                              params.filt_stdev_pixels[f],)
+                         "(pixels) {}".format(self.params.filttype,
+                                              self.params.filt_orientations[o],
+                                              self.params.filt_stdev_pixels[f],)
                 imaging.generate_image(self.filtresponses[o][f], _title,
                                        _filename, outdir)
 
-                _filename = params.filttype + "_filterresponse_ap-{}-" \
-                    "{}.png".format(params.filt_orientations[o],
-                                    params.filt_stdev_pixels[f])
+                _filename = self.params.filttype + "_filterresponse_ap-{}-" \
+                    "{}.png".format(self.params.filt_orientations[o],
+                                    self.params.filt_stdev_pixels[f])
                 _title = "Initial AP {} filter response: orientation {}, " \
                          "frequency " \
-                         "(pixels) {}".format(params.filttype,
-                                              params.filt_orientations[o],
-                                              params.filt_stdev_pixels[f])
+                         "(pixels) {}".format(self.params.filttype,
+                                              self.params.filt_orientations[o],
+                                              self.params.filt_stdev_pixels[f])
                 imaging.generate_image(self.filtresponses[o][f], _title,
                                        _filename, outdir)
 

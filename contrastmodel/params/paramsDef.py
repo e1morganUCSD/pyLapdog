@@ -6,10 +6,11 @@ hold filter and model parameters
 import math
 import contrastmodel.functions.filtergen as fg
 import contrastmodel.functions.imaging as imaging
+import cPickle as pickle
 import os
 
 
-class FilterParams:
+class FilterParams(object):
     """
     holds various parameters for the model to use
     """
@@ -127,6 +128,13 @@ class FilterParams:
 
             if self.verbosity == 3:
                 self._print_filts()
+
+            # load filter masks
+            print("loading filtermasks from file...")
+            self.filtermasks = pickle.load(open("../data/filtermasks_FFT.pkl", mode="rb"))
+
+            print("loading ap_filtermasks from file...")
+            self.ap_filtermasks = pickle.load(open("../data/ap_filtermasks_FFT.pkl", mode="rb"))
 
     def _gen_filters_odog(self):
         """

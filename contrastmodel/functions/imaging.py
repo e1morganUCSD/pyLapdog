@@ -3,6 +3,7 @@ This module contains functions for generating image files
 """
 
 import matplotlib.pyplot as plt
+import os
 
 
 def generate_image(img, title, filename, img_dir, cmap="jet", maximize=False):
@@ -24,3 +25,15 @@ def generate_image(img, title, filename, img_dir, cmap="jet", maximize=False):
         pass
     plt.savefig(img_dir + filename)
     plt.close()
+
+
+def make_dir_if_not_existing(dir_path):
+    """
+    Checks to see if a directory exists and if it doesn't, creates it
+
+    :param str dir_path: directory path to look for
+
+    """
+
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
