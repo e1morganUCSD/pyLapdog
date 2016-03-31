@@ -293,64 +293,66 @@ class LapdogModel(object):
 
                             variant_conn_string += "-excweight{}".format(self.conn_weights[c][1])
 
-                            # output images of total inhibition and excitation (outputting inhibition here so it uses
-                            #  proper directory name
-                            new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
-                            filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(sp_total_inh, title, filename, new_outDir)
+                            if verbosity == 3:
+                                # output images of total inhibition and excitation (outputting inhibition here so it
+                                # uses proper directory name
+                                new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
+                                filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(sp_total_inh, title, filename, new_outDir)
 
-                            filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(ap_total_inh, title, filename, new_outDir)
+                                filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(ap_total_inh, title, filename, new_outDir)
 
-                            filename = "z3b-{}-e{}-total-SP-excitation-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} SP Total Excitation Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(sp_total_exc, title, filename, new_outDir)
+                                filename = "z3b-{}-e{}-total-SP-excitation-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} SP Total Excitation Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(sp_total_exc, title, filename, new_outDir)
 
-                            filename = "z3b-{}-e{}-total-AP-excitation-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} AP Total Excitation Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(ap_total_exc, title, filename, new_outDir)
+                                filename = "z3b-{}-e{}-total-AP-excitation-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} AP Total Excitation Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(ap_total_exc, title, filename, new_outDir)
 
                         else:  # not lapdog2 (doing this here to preserve correct output directories)
-                            new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
-                            filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(sp_total_inh, title, filename, new_outDir)
+                            if verbosity == 3:
+                                new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
+                                filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(sp_total_inh, title, filename, new_outDir)
 
-                            filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                         self.npow[n],
-                                                                                         orientations[o],
-                                                                                         stdev_pixels[f])
-                            title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(ap_total_inh, title, filename, new_outDir)
+                                filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
+                                                                                             self.npow[n],
+                                                                                             orientations[o],
+                                                                                             stdev_pixels[f])
+                                title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
+                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
+                                                                       stdev_pixels[f])
+                                imaging.generate_image(ap_total_inh, title, filename, new_outDir)
 
                         # subtract the AP filter response from the SP response to get a total response that ranges
                         # from -1 to 1
@@ -364,21 +366,23 @@ class LapdogModel(object):
                             model_out[variant_full_name] = temp_filter_resp
                         else:
                             model_out[variant_full_name] += temp_filter_resp
-            # generate image of per-orientation values
-            for n in range(len(self.npow)):
-                for c in range(len(self.conn_weights)):
-                    new_outDir = outDir + "npow{}/".format(self.npow[n]) + \
-                                 "-inhWeight{}".format(self.conn_weights[c][0])
-                    if self.variant == "lapdog2":
-                        new_outDir += "-excweight{}".format(self.conn_weights[c][1])
-                    new_outDir += "/"
 
-                    title = "{}-e{}, weighted, normalized, and combined: orientation: {}".format(self.variant,
-                                                                                                 self.npow[n],
-                                                                                                 orientations[o])
-                    filename = "z4-{}-e{}-normalized-weighted-{}.png".format(self.variant, self.npow[n],
-                                                                             orientations[o])
-                    imaging.generate_image(temp_orient[n][c], title, filename, new_outDir)
+            if verbosity > 1:
+                # generate image of per-orientation values
+                for n in range(len(self.npow)):
+                    for c in range(len(self.conn_weights)):
+                        new_outDir = outDir + "npow{}/".format(self.npow[n]) + \
+                                     "-inhWeight{}".format(self.conn_weights[c][0])
+                        if self.variant == "lapdog2":
+                            new_outDir += "-excweight{}".format(self.conn_weights[c][1])
+                        new_outDir += "/"
+
+                        title = "{}-e{}, weighted, normalized, and combined: orientation: {}".format(self.variant,
+                                                                                                     self.npow[n],
+                                                                                                     orientations[o])
+                        filename = "z4-{}-e{}-normalized-weighted-{}.png".format(self.variant, self.npow[n],
+                                                                                 orientations[o])
+                        imaging.generate_image(temp_orient[n][c], title, filename, new_outDir)
 
         # generate image of finished model output
         for n in range(len(self.npow)):
