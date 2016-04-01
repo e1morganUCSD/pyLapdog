@@ -54,7 +54,7 @@ class FilterParams(object):
         self.filt_orientations = range(0, 179, 30)
 
         # spatial frequencies of the filters
-        self.filt_freqs = range(0, 6, 1)
+        self.filt_freqs = range(0, 7, 1)
 
         # whether or not to use filter weighting
         self.filt_w_use = 1
@@ -172,10 +172,11 @@ class FilterParams(object):
         prints filter figures to image files and saves them
 
         """
-        print("Generating filter files in " + self.mainDir)
+        outDir = self.mainDir + "FILTERS/"
+        print("Generating filter files in " + outDir)
         # make sure output dir exists
-        if not os.path.exists(self.mainDir):
-            os.makedirs(self.mainDir)
+        if not os.path.exists(outDir):
+            os.makedirs(outDir)
 
         for o in range(len(self.filt_orientations)):
             for f in range(len(self.filt_stdev_pixels)):
@@ -183,13 +184,13 @@ class FilterParams(object):
                         "frequency (pixels) {}".format(o, f)
                 filename = "ODOGfilter-{}-{}.png".format(o, f)
                 imaging.generate_image(self.filts[o][f], title, filename,
-                                       self.mainDir)
+                                       outDir)
 
                 title = "Initial ODOG AP filter: orientation {}, " \
                         "frequency (pixels) {}".format(o, f)
                 filename = "ODOGfilter_ap-{}-{}.png".format(o, f)
                 imaging.generate_image(self.ap_filts[o][f], title, filename,
-                                       self.mainDir)
+                                       outDir)
 
 if __name__ == "__main__":
     if os.name == "nt":

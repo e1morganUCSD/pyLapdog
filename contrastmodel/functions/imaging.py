@@ -17,6 +17,12 @@ def generate_image(img, title, filename, img_dir, cmap="jet", maximize=False):
     :param str cmap: colormap used in rendering the figure
     :param bool maximize: whether or not to maximize the figure before saving
     """
+
+    # TODO: review image usage and create directories beforehand, then remove these lines - directories should exist
+    # before imaging is called
+    if not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+
     plt.imshow(img, interpolation="none", cmap=cmap)
     plt.colorbar()
     plt.suptitle(title)

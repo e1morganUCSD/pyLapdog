@@ -5,11 +5,13 @@ describes class and related functions for vision models
 import contrastmodel.functions.stimuli as stims
 import numpy as np
 import contrastmodel.functions.imaging as imaging
-import scipy.ndimage as ndi
+import scipy.signal as ss
 import copy
 
 
 class Model(object):
+    # TODO: figure out how to make it so that I can create a new "Model" and have it figure out the subclass
+    # from the init?
     """
     NOT NEEDED?
     base class for model - contains variables and functions common to all models
@@ -25,16 +27,16 @@ class LapdogModel(object):
 
     """
 
-    def __init__(self, npow, conn_weights, variant):
+    def __init__(self, variant, npow, conn_weights):
         """
         initializes parameter values
 
+        :param string variant: type/version of model (LAPDOG, LAPDOG2, etc)
         :param list[float] npow: power to which the correlation mask is raised - smaller values
         generally make for wider and stronger influence from presynaptic filters, larger values
         tend towards weaker more localized connections
         :param List[int] or list[int,int] conn_weights: list of connection weights: only inhibitory weight for
         LAPDOG, inhibitory weight and excitatory weight for LAPDOG2
-        :param string variant: type/version of model (LAPDOG, LAPDOG2, etc)
         """
 
         self.npow = npow
@@ -49,10 +51,11 @@ class LapdogModel(object):
         """
         processes stimulus
 
+        :rtype: dict[str, numpy.core.multiarray.ndarray]
         :param stims.Stim stim: stimulus to be processed
 
         """
-
+        print("Now processing " + self.friendlyname + " for stimulus " + stim.friendlyname + ":")
         # make copy of filter responses to stimulus so they can be weighted to represent differing frequency
         # sensitivities (roughly corresponding to CSF sensitivity)
         filterresponses = copy.deepcopy(stim.filtresponses)
@@ -91,12 +94,13 @@ class LapdogModel(object):
                 # output image file if needed
                 if verbosity == 3:
                     filename = "z1-{}-weighted-prenormal-ap-{}-{}.png".format(self.friendlyname, orientations[o],
-                                                                           stdev_pixels[f])
+                                                                              stdev_pixels[f])
                     title = "{} Normalization, weighted, antiphase, prenormalization: orientation {}, frequency" \
                             " (pixels) {}".format(self.friendlyname, orientations[o], stdev_pixels[f])
                     imaging.generate_image(ap_filterresponses[o][f], title, filename, outDir)
 
         for o in range(len(orientations)):
+            print("Processing orientation {} of {}".format(o, len(orientations)))
             # used to hold per-orientation results
             temp_orient = [[np.zeros((stim.params.filt_rows, stim.params.filt_cols)) for _ in self.conn_weights] for _
                            in self.npow]
@@ -140,16 +144,24 @@ class LapdogModel(object):
                         filtermask = stim.params.filtermasks[o][f][o2][f2]
                         ap_filtermask = stim.params.ap_filtermasks[o][f][o2][f2]
 
-                        apsp_inh_mask = ap_filtermask(filtermask <= 0) * -1
-                        spsp_inh_mask = filtermask(filtermask <= 0) * -1
-                        apap_inh_mask = filtermask(filtermask <= 0) * -1
-                        spap_inh_mask = ap_filtermask(filtermask <= 0) * -1
+                        apsp_inh_mask = np.copy(ap_filtermask) * -1
+                        apsp_inh_mask[apsp_inh_mask < 0] = 0  # only keep negative values of original ap_filtermask
+                        spsp_inh_mask = np.copy(filtermask) * -1
+                        spsp_inh_mask[spsp_inh_mask < 0] = 0  # only keep negative values of original filtermask
+                        apap_inh_mask = np.copy(filtermask) * -1
+                        apap_inh_mask[apap_inh_mask < 0] = 0  # only keep negative values of original filtermask
+                        spap_inh_mask = np.copy(ap_filtermask) * -1
+                        spap_inh_mask[spap_inh_mask < 0] = 0  # only keep negative values of original ap_filtermask
 
                         if self.variant == "lapdog2":
-                            apsp_exc_mask = ap_filtermask(filtermask >= 0)
-                            spsp_exc_mask = filtermask(filtermask >= 0)
-                            apap_exc_mask = filtermask(filtermask >= 0)
-                            spap_exc_mask = ap_filtermask(filtermask >= 0)
+                            apsp_exc_mask = np.copy(ap_filtermask)
+                            apsp_exc_mask[apsp_exc_mask < 0] = 0
+                            spsp_exc_mask = np.copy(filtermask)
+                            spsp_exc_mask[spsp_exc_mask < 0] = 0
+                            apap_exc_mask = np.copy(filtermask)
+                            apap_exc_mask[apap_exc_mask < 0] = 0
+                            spap_exc_mask = np.copy(ap_filtermask)
+                            spap_exc_mask[spap_exc_mask < 0] = 0
 
                         # get standard phase and antiphase presynaptic filter responses (note: filter response
                         # values range from 0 to 1) - to be used in the loops below
@@ -157,7 +169,7 @@ class LapdogModel(object):
                         prefilt_ap_response = ap_filterresponses[o2][f2]
 
                         # raise masks to npow power
-                        for n in self.npow:
+                        for n in range(len(self.npow)):
                             # apply mask exponent and flip for use in convolution
                             apsp_inh_mask_temp = np.fliplr(np.flipud(apsp_inh_mask**self.npow[n]))
                             spsp_inh_mask_temp = np.fliplr(np.flipud(spsp_inh_mask**self.npow[n]))
@@ -172,14 +184,10 @@ class LapdogModel(object):
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = ndi.convolve(prefilt_ap_response, apsp_inh_mask_temp, 
-                                                                mode='constant', cval=0.0)
-                            spsp_inh_masked_vals = ndi.convolve(prefilt_response, spsp_inh_mask_temp, mode='constant',
-                                                                cval=0.0)
-                            apap_inh_masked_vals = ndi.convolve(prefilt_ap_response, apap_inh_mask_temp, 
-                                                                mode='constant', cval=0.0)
-                            spap_inh_masked_vals = ndi.convolve(prefilt_response, spap_inh_mask_temp, mode='constant',
-                                                                cval=0.0)
+                            apsp_inh_masked_vals = ss.fftconvolve(prefilt_ap_response, apsp_inh_mask_temp, mode='same')
+                            spsp_inh_masked_vals = ss.fftconvolve(prefilt_response, spsp_inh_mask_temp, mode='same')
+                            apap_inh_masked_vals = ss.fftconvolve(prefilt_ap_response, apap_inh_mask_temp, mode='same')
+                            spap_inh_masked_vals = ss.fftconvolve(prefilt_response, spap_inh_mask_temp, mode='same')
                             
                             # save values for this o2, f2 filter into the overall inhibition for filter o, f
                             inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_inh_masked_vals
@@ -188,19 +196,19 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = ndi.convolve(prefilt_ap_response, apsp_exc_mask_temp,
-                                                                    mode='constant', cval=0.0)
-                                spsp_exc_masked_vals = ndi.convolve(prefilt_response, spsp_exc_mask_temp,
-                                                                    mode='constant', cval=0.0)
-                                apap_exc_masked_vals = ndi.convolve(prefilt_ap_response, apap_exc_mask_temp,
-                                                                    mode='constant', cval=0.0)
-                                spap_exc_masked_vals = ndi.convolve(prefilt_response, spap_exc_mask_temp,
-                                                                    mode='constant', cval=0.0)
+                                apsp_exc_masked_vals = ss.fftconvolve(prefilt_ap_response, apsp_exc_mask_temp,
+                                                                      mode='same')
+                                spsp_exc_masked_vals = ss.fftconvolve(prefilt_response, spsp_exc_mask_temp,
+                                                                      mode='same')
+                                apap_exc_masked_vals = ss.fftconvolve(prefilt_ap_response, apap_exc_mask_temp,
+                                                                      mode='same')
+                                spap_exc_masked_vals = ss.fftconvolve(prefilt_response, spap_exc_mask_temp,
+                                                                      mode='same')
                                 # save values for this o2, f2 filter into the overall inhibition for filter o, f
-                                inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_exc_masked_vals
-                                inh_exc_vals[n][1] = inh_exc_vals[n][1] + spsp_exc_masked_vals
-                                inh_exc_vals[n][2] = inh_exc_vals[n][2] + apap_exc_masked_vals
-                                inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_exc_masked_vals
+                                inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
+                                inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
+                                inh_exc_vals[n][6] = inh_exc_vals[n][6] + apap_exc_masked_vals
+                                inh_exc_vals[n][7] = inh_exc_vals[n][7] + spap_exc_masked_vals
 
                 # get average inhibition/excitation
                 for n in range(len(self.npow)):
@@ -266,7 +274,7 @@ class LapdogModel(object):
 
                 # apply inhibition/excitation
                 for n in range(len(self.npow)):
-                    for c in range(self.conn_weights):
+                    for c in range(len(self.conn_weights)):
                         # collect inhibitory totals and weigh them
                         sp_total_inh = (inh_exc_vals[n][0] + inh_exc_vals[n][1]) * self.conn_weights[c][0]
                         ap_total_inh = (inh_exc_vals[n][2] + inh_exc_vals[n][3]) * self.conn_weights[c][0]

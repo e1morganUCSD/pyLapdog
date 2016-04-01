@@ -7,6 +7,7 @@ import math
 import contrastmodel.params.paramsDef as par
 import scipy.signal as ss
 import contrastmodel.functions.imaging as imaging
+from numpy.fft import fft2, ifft2
 import os
 from progressbar import ProgressBar, Bar, Percentage
 
@@ -15,13 +16,19 @@ class Stim(object):
     """
     Stimulus processed by model - also holds filter responses to each stimulus
     """
-    def __init__(self, stimtype, params, variant=""):
+    def __init__(self, stimtype, params):
         """
 
         :param str stimtype: type of stimulus generated
-        :param str variant: type of variant (DI, DD, none)
         :param par.FilterParams params: filter parameters and filters
         """
+        # strip off variant name if present
+        if stimtype[-2:] == "DD" or stimtype[-2:] == "DI":
+            variant = stimtype[-2:]
+            stimtype = stimtype[:-3]
+        else:
+            variant = ""
+
         self.variant = variant
         self.stimtype = stimtype
         self.params = params
@@ -33,6 +40,8 @@ class Stim(object):
 
         # create output directory stub for stimulus
         self.outDir = self.friendlyname + "/"
+
+        print("Generating stimulus " + self.friendlyname + "...")
 
         # generate stimulus image
         if stimtype == "Whites":
@@ -203,12 +212,16 @@ class Stim(object):
                                cmap="gray")
 
         # get responses of filters to stimulus
+        print("Generating responses of filters to " + self.friendlyname)
         self.filtresponses, self.ap_filtresponses = \
             _gen_filter_response(self.params, self.img)
 
         # (optionally) print filter responses for stimulus
         if params.verbosity > 1:
+            print("Printing filter images...")
             self._print_filter_responses()
+
+        print("Done Generating " + self.friendlyname)
 
     def _print_filter_responses(self):
         """
@@ -239,7 +252,7 @@ class Stim(object):
                          "(pixels) {}".format(self.params.filttype,
                                               self.params.filt_orientations[o],
                                               self.params.filt_stdev_pixels[f])
-                imaging.generate_image(self.filtresponses[o][f], _title,
+                imaging.generate_image(self.ap_filtresponses[o][f], _title,
                                        _filename, outdir)
 
 
@@ -1223,9 +1236,8 @@ def _gen_filter_response(params, img):
             # results in values ranging from -1 to 1, but this needs to be
             # re-ranged to between 0 and 1 to reflect that the responses are
             #  levels of response from the filter to the stimulus
-            filtresponse[o][f] = (_normalized_conv(img, filt)+1.0) / 2.0
-            ap_filtresponse[o][f] = 1 - ((_normalized_conv(img,
-                                                           ap_filt)+1.0) / 2.0)
+            filtresponse[o][f] = (_normalized_conv(img, filt, 0.5) + 1.0) / 2.0
+            ap_filtresponse[o][f] = (_normalized_conv(img, ap_filt, 0.5) + 1.0) / 2.0
 
             pbar.update(pbar_count)
             pbar_count += 1
@@ -1235,7 +1247,7 @@ def _gen_filter_response(params, img):
     return filtresponse, ap_filtresponse
 
 
-def _normalized_conv(img, filt):
+def _normalized_conv_old(img, filt):
     """
     Performs FFT-based normalization on filter and image, with normalization so that a value of 1 in the response
     represents maximum possible response from filter to stimulus.
@@ -1248,11 +1260,51 @@ def _normalized_conv(img, filt):
     # get normalization info (convolving the filter with a matrix of 1s gives
     # us the max value of the convolution with that filter - dividing the end
     # convolution result by these max values gives us a normalized response)
-    normimg = np.ones(np.shape(filt))
+    normimg = np.ones(filt.shape)
     filt = np.fliplr(np.flipud(filt))
     normtemp = ss.fftconvolve(normimg, filt, mode="same")
 
     return ss.fftconvolve(img, filt, mode="same") / normtemp
+
+
+def _normalized_conv(img, filt, padval):
+    """
+    Performs FFT-based normalization on filter and image, with normalization so that a value of 1 in the response
+    represents maximum possible response from filter to stimulus.
+
+    :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
+    :param numpy.core.multiarray.ndarray filt: filter to convolve with
+    :param float padval: value with which to pad the img before convolution
+    :return: result of convolution
+    :rtype: numpy.core.multiarray.ndarray
+    """
+    # pad the images
+    s_filt = filt.shape
+    s_img = img.shape
+
+    # appropriate padding depends on context
+    pad_img = np.ones((s_img[0] + s_filt[0], s_img[1] + s_filt[1])) * padval
+
+    pad_img[0: s_img[0], 0: s_img[1]] = img
+
+    pad_filt = np.zeros((s_img[0] + s_filt[0], s_img[1] + s_filt[1]))
+
+    pad_filt[0: s_filt[0], 0: s_filt[1]] = filt
+
+    # get normalization info (convolving the filter with a matrix of 1s gives
+    # us the max value of the convolution with that filter - dividing the end
+    # convolution result by these max values gives us a normalized response)
+    normimg = np.ones(pad_filt.shape)
+    normtemp = (ifft2(fft2(np.absolute(pad_filt)) * fft2(normimg))).real
+
+    # Paul's slightly corrected version
+    temp_out = (ifft2(fft2(pad_img) * fft2(pad_filt))).real
+    temp_out = temp_out / normtemp
+
+    # extract the appropriate portion of the filtered image
+    filtered = temp_out[(s_filt[0] / 2): -(s_filt[0] / 2), s_filt[1] / 2: -(s_filt[1] / 2)]
+
+    return filtered
 
 
 if __name__ == '__main__':
@@ -1265,13 +1317,12 @@ if __name__ == '__main__':
                      "Anderson", "Rings", "Radial", "Zigzag", "Jacob 1",
                      "Jacob 2"]:
 
-        for testvariant in ["", "DI", "DD"]:
-            temp = Stim(stimname, filtparams, variant=testvariant)
+        temp = Stim(stimname, filtparams)
 
-            tempfilename = temp.stimtype + temp.variant + ".png"
-            outputdir = "../../experiments/output/"
-            fig = plt.imshow(temp.img, interpolation="none", cmap="gray")
-            plt.colorbar()
-            plt.suptitle(tempfilename)
-            plt.savefig(outputdir + tempfilename)
-            plt.close()
+        tempfilename = temp.stimtype + temp.variant + ".png"
+        outputdir = "../../experiments/output/"
+        fig = plt.imshow(temp.img, interpolation="none", cmap="gray")
+        plt.colorbar()
+        plt.suptitle(tempfilename)
+        plt.savefig(outputdir + tempfilename)
+        plt.close()
