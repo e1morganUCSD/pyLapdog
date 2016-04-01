@@ -10,14 +10,17 @@ import contrastmodel.params.paramsDef as par
 import contrastmodel.functions.stimuli as stimclass
 import contrastmodel.functions.models as modelclass
 
-mainDir = "C:\\Users\\Eric\\Documents\\PyLapdog_Output\\initialtest\\"
+#mainDir = "C:\\Users\\Eric\\Documents\\PyLapdog_Output\\initialtest\\"
+mainDir = "/home/AD/e1morgan/Documents/e1morgan_data/pyLapdog_output/"
 
 print("Generating params:")
 params = par.FilterParams(mainDir, verbosity=3)
+params.load_filtermasks()
 
 print("Generating models:")
-modellist = [["lapdog", [1], [[3]]],
-             ["lapdog2", [3], [[2, 1]]]]
+modellist = [["lapdog2", [3], [[2, 1]]]]
+# modellist = [["lapdog", [1], [[3]]],
+#              ["lapdog2", [3], [[2, 1]]]]
 
 models = {}
 for model in range(len(modellist)):
@@ -26,10 +29,10 @@ for model in range(len(modellist)):
 print("done generating models")
 
 print("Generating stims:")
-stimlist = ["Whites",
-            "Whites DD",
-            "Rings",
-            "Zigzag"]
+stimlist = ["Whites"]
+            # "Whites DD",
+            # "Rings",
+            # "Zigzag"]
 
 stims = {}
 

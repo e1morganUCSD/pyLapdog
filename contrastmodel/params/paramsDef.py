@@ -74,6 +74,10 @@ class FilterParams(object):
         # save verbosity level
         self.verbosity = verbosity
 
+        # create placeholder for filtermasks
+        self.filtermasks = {}
+        self.ap_filtermasks = {}
+
         if filttype == "odog":
             # conversion factor
             self.const_SPACE_CONST_TO_STD = 1.0 / math.sqrt(2.0)
@@ -129,12 +133,16 @@ class FilterParams(object):
             if self.verbosity == 3:
                 self._print_filts()
 
-            # load filter masks
-            print("loading filtermasks from file...")
-            self.filtermasks = pickle.load(open("../data/filtermasks_FFT.pkl", mode="rb"))
+    def load_filtermasks(self):
+        """
+        loads filtermasks from file to local variable
+        """
+        # load filter masks
+        print("loading filtermasks from file...")
+        self.filtermasks = pickle.load(open("../data/{}_filtermasks_FFT.pkl".format(self.filttype), mode="rb"))
 
-            print("loading ap_filtermasks from file...")
-            self.ap_filtermasks = pickle.load(open("../data/ap_filtermasks_FFT.pkl", mode="rb"))
+        print("loading ap_filtermasks from file...")
+        self.ap_filtermasks = pickle.load(open("../data/{}_ap_filtermasks_FFT.pkl".format(self.filttype), mode="rb"))
 
     def _gen_filters_odog(self):
         """

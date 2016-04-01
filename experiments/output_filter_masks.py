@@ -24,10 +24,10 @@ if __name__ == "__main__":
     msk.generate_correlation_mask_fft(params)
 
     print("loading filtermasks from file...")
-    filtermasks = pickle.load(open("filtermasks_FFT.pkl", mode="rb"))
+    filtermasks = pickle.load(open("{}_filtermasks_FFT.pkl".format(params.filttype), mode="rb"))
 
     print("loading ap_filtermasks from file...")
-    ap_filtermasks = pickle.load(open("ap_filtermasks_FFT.pkl", mode="rb"))
+    ap_filtermasks = pickle.load(open("{}_ap_filtermasks_FFT.pkl".format(params.filttype), mode="rb"))
 
     orientations = params.filt_orientations
     stdev_pixels = params.filt_stdev_pixels

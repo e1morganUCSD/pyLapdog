@@ -7,9 +7,10 @@ import math
 import contrastmodel.params.paramsDef as par
 import scipy.signal as ss
 import contrastmodel.functions.imaging as imaging
-from numpy.fft import fft2, ifft2
+# from numpy.fft import fft2, ifft2
 import os
 from progressbar import ProgressBar, Bar, Percentage
+from numba import cuda
 
 
 class Stim(object):
@@ -1295,10 +1296,10 @@ def _normalized_conv(img, filt, padval):
     # us the max value of the convolution with that filter - dividing the end
     # convolution result by these max values gives us a normalized response)
     normimg = np.ones(pad_filt.shape)
-    normtemp = (ifft2(fft2(np.absolute(pad_filt)) * fft2(normimg))).real
+    normtemp = (np.fft.ifft2(np.fft.fft2(np.absolute(pad_filt)) * np.fft.fft2(normimg))).real
 
     # Paul's slightly corrected version
-    temp_out = (ifft2(fft2(pad_img) * fft2(pad_filt))).real
+    temp_out = (np.fft.ifft2(np.fft.fft2(pad_img) * np.fft.fft2(pad_filt))).real
     temp_out = temp_out / normtemp
 
     # extract the appropriate portion of the filtered image

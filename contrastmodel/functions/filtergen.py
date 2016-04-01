@@ -4,6 +4,7 @@ This module contains functions used for generation of ODOG and Gabor filters
 
 import math
 import numpy as np
+from numba import cuda
 
 
 # ---FILTER GENERATION HELPER FUNCTIONS---

@@ -150,11 +150,12 @@ def generate_correlation_mask(params):
         for f in range(len(stdev_pixels)):
             filtermasks[o][f] = {}
             ap_filtermasks[o][f] = {}
-            post_filter = fg.gen_odog(params.filt_rows, params.filt_cols,
-                                      stdev_pixels[f], stdev_pixels[f],
-                                      params.filt_negwidth,
-                                      params.filt_neglen, orientations[o] *
-                                      (math.pi/180), params.filt_centerW)
+            post_filter = params.filts[o][f]
+            # post_filter = fg.gen_odog(params.filt_rows, params.filt_cols,
+            #                           stdev_pixels[f], stdev_pixels[f],
+            #                           params.filt_negwidth,
+            #                           params.filt_neglen, orientations[o] *
+            #                           (math.pi / 180), params.filt_centerW)
 
             # normalize filter to max response of 1
             post_filter /= np.max(np.abs(post_filter))
@@ -169,14 +170,15 @@ def generate_correlation_mask(params):
                 filtermasks[o][f][o2] = {}
                 ap_filtermasks[o][f][o2] = {}
                 for f2 in range(len(stdev_pixels)):
-                    pre_filter = fg.gen_odog(params.filt_rows,
-                                             params.filt_cols,
-                                             stdev_pixels[f2],
-                                             stdev_pixels[f2],
-                                             params.filt_negwidth,
-                                             params.filt_neglen,
-                                             orientations[o2] * (math.pi/180),
-                                             params.filt_centerW)
+                    pre_filter = params.filts[o2][f2]
+                    # pre_filter = fg.gen_odog(params.filt_rows,
+                    #                          params.filt_cols,
+                    #                          stdev_pixels[f2],
+                    #                          stdev_pixels[f2],
+                    #                          params.filt_negwidth,
+                    #                          params.filt_neglen,
+                    #                          orientations[o2] * (math.pi / 180),
+                    #                          params.filt_centerW)
 
                     # normalize filter to max response of 1
                     pre_filter /= np.max(np.abs(pre_filter))
@@ -194,8 +196,8 @@ def generate_correlation_mask(params):
 
     pbar.finish()
 
-    pickle.dump(filtermasks, open("filtermasks.pkl", mode='wb'), protocol=2)
-    pickle.dump(ap_filtermasks, open("ap_filtermasks.pkl", mode='wb'),
+    pickle.dump(filtermasks, open("{}filtermasks.pkl".format(params.filttype), mode='wb'), protocol=2)
+    pickle.dump(ap_filtermasks, open("{}ap_filtermasks.pkl".format(params.filttype), mode='wb'),
                 protocol=2)
     # np.save("filtermasks_nonFFT.npy", filtermasks)
     # np.save("ap_filtermasks_nonFFT.npy", ap_filtermasks)
@@ -299,9 +301,9 @@ def generate_correlation_mask_fft(params):
 
     pbar.finish()
 
-    pickle.dump(filtermasks, open("filtermasks_FFT.pkl", mode='wb'),
+    pickle.dump(filtermasks, open("{}_filtermasks_FFT.pkl".format(params.filttype), mode='wb'),
                 protocol=2)
-    pickle.dump(ap_filtermasks, open("ap_filtermasks_FFT.pkl", mode='wb'),
+    pickle.dump(ap_filtermasks, open("{}_ap_filtermasks_FFT.pkl".format(params.filttype), mode='wb'),
                 protocol=2)
     # np.save("filtermasks_FFT.npy", filtermasks)
     # np.save("ap_filtermasks_FFT.npy", ap_filtermasks)
@@ -316,11 +318,12 @@ if __name__ == "__main__":
 
     filterparams = par.FilterParams()
 
-    # reduce the number of options so it processes more quickly
-    filterparams.filt_orientations = range(0, 89, 30)
-    filterparams.filt_stdev_pixels = [4.0, 8.0, 16.0]
+    # # reduce the number of options so it processes more quickly
+    # filterparams.filt_orientations = range(0, 89, 30)
+    # filterparams.filt_stdev_pixels = [4.0, 8.0, 16.0]
 
     start = time.time()
+    print("Generating masks...")
     filtermasks_test, ap_filtermasks_test = generate_correlation_mask_fft(
         filterparams)
 

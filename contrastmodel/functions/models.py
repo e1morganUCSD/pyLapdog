@@ -7,6 +7,7 @@ import numpy as np
 import contrastmodel.functions.imaging as imaging
 import scipy.signal as ss
 import copy
+#from numba import cuda
 
 
 class Model(object):
