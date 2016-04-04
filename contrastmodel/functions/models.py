@@ -5,9 +5,9 @@ describes class and related functions for vision models
 import contrastmodel.functions.stimuli as stims
 import numpy as np
 import contrastmodel.functions.imaging as imaging
-import scipy.signal as ss
+# import scipy.signal as ss
 import copy
-#from numba import cuda
+# from numba import cuda
 
 
 class Model(object):
@@ -185,10 +185,10 @@ class LapdogModel(object):
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = ss.fftconvolve(prefilt_ap_response, apsp_inh_mask_temp, mode='same')
-                            spsp_inh_masked_vals = ss.fftconvolve(prefilt_response, spsp_inh_mask_temp, mode='same')
-                            apap_inh_masked_vals = ss.fftconvolve(prefilt_ap_response, apap_inh_mask_temp, mode='same')
-                            spap_inh_masked_vals = ss.fftconvolve(prefilt_response, spap_inh_mask_temp, mode='same')
+                            apsp_inh_masked_vals = stims.our_conv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
+                            spsp_inh_masked_vals = stims.our_conv(prefilt_response, spsp_inh_mask_temp, 0.0)
+                            apap_inh_masked_vals = stims.our_conv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
+                            spap_inh_masked_vals = stims.our_conv(prefilt_response, spap_inh_mask_temp, 0.0)
                             
                             # save values for this o2, f2 filter into the overall inhibition for filter o, f
                             inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_inh_masked_vals
@@ -197,14 +197,10 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = ss.fftconvolve(prefilt_ap_response, apsp_exc_mask_temp,
-                                                                      mode='same')
-                                spsp_exc_masked_vals = ss.fftconvolve(prefilt_response, spsp_exc_mask_temp,
-                                                                      mode='same')
-                                apap_exc_masked_vals = ss.fftconvolve(prefilt_ap_response, apap_exc_mask_temp,
-                                                                      mode='same')
-                                spap_exc_masked_vals = ss.fftconvolve(prefilt_response, spap_exc_mask_temp,
-                                                                      mode='same')
+                                apsp_exc_masked_vals = stims.our_conv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
+                                spsp_exc_masked_vals = stims.our_conv(prefilt_response, spsp_exc_mask_temp, 0.0)
+                                apap_exc_masked_vals = stims.our_conv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
+                                spap_exc_masked_vals = stims.our_conv(prefilt_response, spap_exc_mask_temp, 0.0)
                                 # save values for this o2, f2 filter into the overall inhibition for filter o, f
                                 inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
                                 inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
