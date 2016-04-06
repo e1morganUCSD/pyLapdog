@@ -7,8 +7,7 @@ import math
 import contrastmodel.params.paramsDef as par
 import scipy.signal as ss
 import contrastmodel.functions.imaging as imaging
-from accelerate.cuda.fft import FFTPlan, fft_inplace, ifft_inplace
-from numba import cuda, vectorize
+import contrastmodel.functions.gpufunc as gpuf
 # from numpy.fft import fft2, ifft2
 import os
 from progressbar import ProgressBar, Bar, Percentage
@@ -1238,8 +1237,8 @@ def _gen_filter_response(params, img):
             # results in values ranging from -1 to 1, but this needs to be
             # re-ranged to between 0 and 1 to reflect that the responses are
             #  levels of response from the filter to the stimulus
-            filtresponse[o][f] = (normalized_conv(img, filt, 0.5) + 1.0) / 2.0
-            ap_filtresponse[o][f] = (normalized_conv(img, ap_filt, 0.5) + 1.0) / 2.0
+            filtresponse[o][f] = (gpuf.normalized_conv(img, filt, 0.5) + 1.0) / 2.0
+            ap_filtresponse[o][f] = (gpuf.normalized_conv(img, ap_filt, 0.5) + 1.0) / 2.0
 
             pbar.update(pbar_count)
             pbar_count += 1
@@ -1305,124 +1304,6 @@ def _normalized_conv_nogpu(img, filt, padval):
 
     # extract the appropriate portion of the filtered image
     filtered = temp_out[(s_filt[0] / 2): -(s_filt[0] / 2), s_filt[1] / 2: -(s_filt[1] / 2)]
-
-    return filtered
-
-
-@vectorize(['complex64(complex64, complex64)'], target='cuda')
-def vmult(a, b):
-    """
-    vectorized helper function for multiplying a * b
-    """
-    return a * b
-
-
-@vectorize(['complex64(complex64, complex64)'], target='cuda')
-def vdiv(a, b):
-    """
-    vectorized helper function for dividing a / b
-    """
-    return a / b
-
-
-def normalized_conv(img, filt, padval):
-    """
-    Performs FFT-based normalization on filter and image, with normalization so that a value of 1 in the response
-    represents maximum possible response from filter to stimulus.
-
-    :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
-    :param numpy.core.multiarray.ndarray filt: filter to convolve with
-    :param float padval: value with which to pad the img before convolution
-    :return: result of convolution
-    :rtype: numpy.core.multiarray.ndarray
-    """
-    # pad the images
-    s_filt = filt.shape
-    s_img = img.shape
-
-    # appropriate padding depends on context
-    pad_img = np.ones((s_img[0] + s_filt[0], s_img[1] + s_filt[1]), dtype=np.float32) * padval
-
-    pad_img[0: s_img[0], 0: s_img[1]] = img
-
-    pad_filt = np.zeros((s_img[0] + s_filt[0], s_img[1] + s_filt[1]), dtype=np.float32)
-
-    pad_filt[0: s_filt[0], 0: s_filt[1]] = filt
-
-    # initialize the GPU
-    FFTPlan(shape=pad_img.shape, itype=np.complex64, otype=np.complex64)
-
-    # get normalization info (convolving the filter with a matrix of 1s gives
-    # us the max value of the convolution with that filter - dividing the end
-    # convolution result by these max values gives us a normalized response)
-    normimg = np.ones(pad_filt.shape, dtype=np.complex64)
-    abs_pad_filt = np.absolute(pad_filt).astype(np.complex64)
-
-    # transfer data to GPU
-    d_normimg = cuda.to_device(normimg)
-    d_abs_pad_filt = cuda.to_device(abs_pad_filt)
-    fft_inplace(d_normimg)
-    fft_inplace(d_abs_pad_filt)
-    vmult(d_normimg, d_abs_pad_filt, out=d_normimg)
-    ifft_inplace(d_normimg)
-    # normtemp = (cuda.fft.ifft_inplace(cuda.fft.fft_inplace(np.absolute(pad_filt)) * cuda.fft.fft_inplace(
-    # normimg))).real
-
-    d_pad_filt = cuda.to_device(pad_filt.astype(np.complex64))
-    d_pad_img = cuda.to_device(pad_img.astype(np.complex64))
-    fft_inplace(d_pad_filt)
-    fft_inplace(d_pad_img)
-    vmult(d_pad_img, d_pad_filt, out=d_pad_img)
-    ifft_inplace(d_pad_img)
-    # temp_out = (cuda.fft.ifft_inplace(cuda.fft.fft_inplace(pad_img)) * cuda.fft.fft_inplace(pad_filt)).real
-    vdiv(d_pad_img, d_normimg)
-
-    temp_out = d_pad_img.copy_to_host().real
-
-    # extract the appropriate portion of the filtered image
-    filtered = temp_out[(s_filt[0] / 2): (s_filt[0] / 2) + s_img[0], (s_filt[1] / 2): (s_filt[1] / 2) + s_img[1]]
-
-    return filtered
-
-
-def our_conv(img, filt, padval):
-    """
-    Performs FFT-based normalization on filter and image, without normalization
-
-    :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
-    :param numpy.core.multiarray.ndarray filt: filter to convolve with
-    :param float padval: value with which to pad the img before convolution
-    :return: result of convolution
-    :rtype: numpy.core.multiarray.ndarray
-    """
-    # pad the images
-    s_filt = filt.shape
-    s_img = img.shape
-
-    # appropriate padding depends on context
-    pad_img = np.ones((s_img[0] + s_filt[0], s_img[1] + s_filt[1])) * padval
-
-    pad_img[0: s_img[0], 0: s_img[1]] = img
-
-    pad_filt = np.zeros((s_img[0] + s_filt[0], s_img[1] + s_filt[1]))
-
-    pad_filt[0: s_filt[0], 0: s_filt[1]] = filt
-
-    # initialize the GPU
-    FFTPlan(shape=pad_img.shape, itype=np.complex64, otype=np.complex64)
-
-    d_pad_filt = cuda.to_device(pad_filt.astype(np.complex64))
-    d_pad_img = cuda.to_device(pad_img.astype(np.complex64))
-
-    fft_inplace(d_pad_filt)
-    fft_inplace(d_pad_img)
-    vmult(d_pad_img, d_pad_filt, out=d_pad_img)
-    ifft_inplace(d_pad_img)
-    # temp_out = (cuda.fft.ifft_inplace(cuda.fft.fft_inplace(pad_img)) * cuda.fft.fft_inplace(pad_filt)).real
-    temp_out = d_pad_img.copy_to_host().real
-
-    # extract the appropriate portion of the filtered image
-    filtered = temp_out[(s_filt[0] / 2): (s_filt[0] / 2) + s_img[0], (s_filt[1] / 2): (s_filt[1] / 2) + s_img[1]]
 
     return filtered
 
