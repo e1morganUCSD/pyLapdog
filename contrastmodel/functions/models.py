@@ -172,24 +172,36 @@ class LapdogModel(object):
 
                         # raise masks to npow power
                         for n in range(len(self.npow)):
-                            # apply mask exponent and flip for use in convolution
-                            apsp_inh_mask_temp = np.fliplr(np.flipud(apsp_inh_mask**self.npow[n]))
-                            spsp_inh_mask_temp = np.fliplr(np.flipud(spsp_inh_mask**self.npow[n]))
-                            apap_inh_mask_temp = np.fliplr(np.flipud(apap_inh_mask**self.npow[n]))
-                            spap_inh_mask_temp = np.fliplr(np.flipud(spap_inh_mask**self.npow[n]))
+                            # # apply mask exponent and flip for use in convolution
+                            # apsp_inh_mask_temp = np.fliplr(np.flipud(apsp_inh_mask ** self.npow[n]))
+                            # spsp_inh_mask_temp = np.fliplr(np.flipud(spsp_inh_mask ** self.npow[n]))
+                            # apap_inh_mask_temp = np.fliplr(np.flipud(apap_inh_mask ** self.npow[n]))
+                            # spap_inh_mask_temp = np.fliplr(np.flipud(spap_inh_mask ** self.npow[n]))
+                            #
+                            # if self.variant == "lapdog2":
+                            #     apsp_exc_mask_temp = np.fliplr(np.flipud(apsp_exc_mask ** self.npow[n]))
+                            #     spsp_exc_mask_temp = np.fliplr(np.flipud(spsp_exc_mask ** self.npow[n]))
+                            #     apap_exc_mask_temp = np.fliplr(np.flipud(apap_exc_mask ** self.npow[n]))
+                            #     spap_exc_mask_temp = np.fliplr(np.flipud(spap_exc_mask ** self.npow[n]))
+
+                            # apply mask exponent
+                            apsp_inh_mask_temp = apsp_inh_mask ** self.npow[n]
+                            spsp_inh_mask_temp = spsp_inh_mask ** self.npow[n]
+                            apap_inh_mask_temp = apap_inh_mask ** self.npow[n]
+                            spap_inh_mask_temp = spap_inh_mask ** self.npow[n]
 
                             if self.variant == "lapdog2":
-                                apsp_exc_mask_temp = np.fliplr(np.flipud(apsp_exc_mask**self.npow[n]))
-                                spsp_exc_mask_temp = np.fliplr(np.flipud(spsp_exc_mask**self.npow[n]))
-                                apap_exc_mask_temp = np.fliplr(np.flipud(apap_exc_mask**self.npow[n]))
-                                spap_exc_mask_temp = np.fliplr(np.flipud(spap_exc_mask**self.npow[n]))
+                                apsp_exc_mask_temp = apsp_exc_mask ** self.npow[n]
+                                spsp_exc_mask_temp = spsp_exc_mask ** self.npow[n]
+                                apap_exc_mask_temp = apap_exc_mask ** self.npow[n]
+                                spap_exc_mask_temp = spap_exc_mask ** self.npow[n]
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = gpuf.our_conv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
-                            spsp_inh_masked_vals = gpuf.our_conv(prefilt_response, spsp_inh_mask_temp, 0.0)
-                            apap_inh_masked_vals = gpuf.our_conv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
-                            spap_inh_masked_vals = gpuf.our_conv(prefilt_response, spap_inh_mask_temp, 0.0)
+                            apsp_inh_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
+                            spsp_inh_masked_vals = gpuf.normalized_conv(prefilt_response, spsp_inh_mask_temp, 0.0)
+                            apap_inh_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
+                            spap_inh_masked_vals = gpuf.normalized_conv(prefilt_response, spap_inh_mask_temp, 0.0)
                             
                             # save values for this o2, f2 filter into the overall inhibition for filter o, f
                             inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_inh_masked_vals
@@ -198,10 +210,14 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = gpuf.our_conv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
-                                spsp_exc_masked_vals = gpuf.our_conv(prefilt_response, spsp_exc_mask_temp, 0.0)
-                                apap_exc_masked_vals = gpuf.our_conv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
-                                spap_exc_masked_vals = gpuf.our_conv(prefilt_response, spap_exc_mask_temp, 0.0)
+                                apsp_exc_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apsp_exc_mask_temp,
+                                                                            0.0)
+                                spsp_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spsp_exc_mask_temp,
+                                                                            0.0)
+                                apap_exc_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_exc_mask_temp,
+                                                                            0.0)
+                                spap_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spap_exc_mask_temp,
+                                                                             0.0)
                                 # save values for this o2, f2 filter into the overall inhibition for filter o, f
                                 inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
                                 inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
@@ -364,7 +380,7 @@ class LapdogModel(object):
                         # from -1 to 1
                         temp_filter_resp = temp_sp_filter_resp - temp_ap_filter_resp
                         temp_filter_resp[temp_filter_resp < 0] = 0
-                        temp_filter_resp[temp_filter_resp > 0] = 1
+                        temp_filter_resp[temp_filter_resp > 1] = 1
                         temp_orient[n][c] += temp_filter_resp
 
                         variant_full_name = self.variant + "-e{}".format(self.npow[n]) + variant_conn_string
