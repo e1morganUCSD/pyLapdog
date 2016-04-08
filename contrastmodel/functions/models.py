@@ -37,8 +37,8 @@ class LapdogModel(object):
         :param list[float] npow: power to which the correlation mask is raised - smaller values
         generally make for wider and stronger influence from presynaptic filters, larger values
         tend towards weaker more localized connections
-        :param List[int] or list[int,int] conn_weights: list of connection weights: only inhibitory weight for
-        LAPDOG, inhibitory weight and excitatory weight for LAPDOG2
+        :param list(list(int)) or list(list(int,int)) conn_weights: list of connection weights: only inhibitory
+        weight for LAPDOG, inhibitory weight and excitatory weight for LAPDOG2
         """
 
         self.npow = npow
@@ -53,7 +53,7 @@ class LapdogModel(object):
         """
         processes stimulus
 
-        :rtype: dict[str, numpy.core.multiarray.ndarray]
+        :rtype: (dict[str, numpy.core.multiarray.ndarray], dict[str, str])
         :param stims.Stim stim: stimulus to be processed
 
         """
@@ -69,7 +69,8 @@ class LapdogModel(object):
         verbosity = stim.params.verbosity
 
         # generate output and processing variables - created as dictionary keyed by model parameter options
-        model_out = {}
+        model_out = {}      # holds final processed stimulus
+        model_outdir = {}   # holds directory of model
 
         # generate output folder
         outDir = stim.params.mainDir + stim.outDir + self.outDir
@@ -217,7 +218,7 @@ class LapdogModel(object):
                                 apap_exc_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_exc_mask_temp,
                                                                             0.0)
                                 spap_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spap_exc_mask_temp,
-                                                                             0.0)
+                                                                            0.0)
                                 # save values for this o2, f2 filter into the overall inhibition for filter o, f
                                 inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
                                 inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
@@ -406,7 +407,7 @@ class LapdogModel(object):
                                                                                  orientations[o])
                         imaging.generate_image(temp_orient[n][c], title, filename, new_outDir)
 
-        # generate image of finished model output
+        # generate image of finished model output and process patch differences and plot them
         for n in range(len(self.npow)):
             for c in range(len(self.conn_weights)):
                 variant_conn_string = "-inhWeight{}".format(self.conn_weights[c][0])
@@ -418,5 +419,6 @@ class LapdogModel(object):
                 title = "{} Final Model".format(self.friendlyname)
                 imaging.generate_image(model_out[self.variant + "-e{}".format(self.npow[n]) + variant_conn_string],
                                        title, filename, new_outDir)
+                model_outdir[self.variant + "-e{}".format(self.npow[n]) + variant_conn_string] = new_outDir
 
-        return model_out
+        return model_out, model_outdir

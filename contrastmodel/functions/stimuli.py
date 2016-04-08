@@ -5,6 +5,7 @@ contains class definition for stimuli
 import numpy as np
 import math
 import contrastmodel.params.paramsDef as par
+import matplotlib.pyplot as plt
 import scipy.signal as ss
 import contrastmodel.functions.imaging as imaging
 import contrastmodel.functions.gpufunc as gpuf
@@ -255,6 +256,43 @@ class Stim(object):
                                               self.params.filt_stdev_pixels[f])
                 imaging.generate_image(self.ap_filtresponses[o][f], _title,
                                        _filename, outdir)
+
+    def find_diffs(self, results, results_dirs):
+        """
+
+        :param results: results of model applications to stimulus
+        :type results: dict[str, numpy.core.multiarray.ndarray]
+        :param results_dirs: model file directories for output of diff plot
+        :type results_dirs: dict[str, str]
+        :return: Dictionary of patch difference means for each model, each as a list [difference, mean_hi, mean_low,
+            mean_background]
+        :rtype: dict[str, float32]
+        """
+        img_mean = np.mean(self.img)
+
+        diffs = {}
+        for key in results:
+            bg_region_mean = np.mean(results[key][self.regions == self.bg_region]) - img_mean
+            hi_region_mean = np.mean(results[key][self.regions == self.high_region]) - img_mean
+            lo_region_mean = np.mean(results[key][self.regions == self.low_region]) - img_mean
+
+            diffs[key] = hi_region_mean - lo_region_mean
+
+            # plot difference for this model
+            outDir = results_dirs[key]
+            filename = self.friendlyname + "-" + key + "-regionmeans.png"
+
+            fig = plt.figure()
+            ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
+            ax.bar([-0.125, 1.0 - 0.125], [bg_region_mean, hi_region_mean, lo_region_mean], 0.25)
+            ax.set_xticks([0, 1, 2])  # ticks for bg, hi, lo
+            ax.set_xlim([-0.5, 2.5])
+            ax.set_xticklabels(['BG', 'HI', 'LO'])
+            plt.title(self.friendlyname + " - " + key)
+            plt.savefig(outDir + filename)
+            plt.close()
+
+        return diffs
 
 
 def _make_whites():
@@ -1306,6 +1344,8 @@ def _normalized_conv_nogpu(img, filt, padval):
     filtered = temp_out[(s_filt[0] / 2): -(s_filt[0] / 2), s_filt[1] / 2: -(s_filt[1] / 2)]
 
     return filtered
+
+
 
 
 if __name__ == '__main__':
