@@ -10,8 +10,8 @@ import contrastmodel.params.paramsDef as par
 import contrastmodel.functions.stimuli as stimclass
 import contrastmodel.functions.models as modelclass
 
-#mainDir = "C:\\Users\\Eric\\Documents\\PyLapdog_Output\\initialtest\\"
-mainDir = "/home/AD/e1morgan/Documents/e1morgan_data/pyLapdog_output/"
+mainDir = "C:\\Users\\Eric\\Documents\\PyLapdog_Output\\initialtest\\"
+#mainDir = "/home/AD/e1morgan/Documents/e1morgan_data/pyLapdog_output/"
 
 print("Generating params:")
 params = par.FilterParams(mainDir, verbosity=3)
@@ -39,11 +39,21 @@ stims = {}
 for stimname in stimlist:
     stims[stimname] = stimclass.Stim(stimname, params)
 
-results = {}
+results = {}        # used to hold final processed output
+results_dirs = {}   # holds directories for each model output
+diffs = {}          # used to hold patch differences for each stim/model
+
 print("Processing stims:")
 for stimname in stimlist:
     print("--Processing " + stimname)
 
+    results[stimname] = {}
+    diffs[stimname] = {}
+
     for modelnum in range(len(models)):
         print("----Processing model {} of {}".format(modelnum, len(models)))
-        results[stimname] = models[modelnum].process_stim(stims[stimname])
+        results_temp, results_dirs_temp = models[modelnum].process_stim(stims[stimname])
+        results[stimname].update(results_temp)
+        results_dirs[stimname].update(results_dirs_temp)
+
+    diffs.update(stims[stimname].find_diffs(results[stimname]. results_dirs[stimname]))

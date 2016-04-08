@@ -204,6 +204,12 @@ class LapdogModel(object):
                             apap_inh_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
                             spap_inh_masked_vals = gpuf.normalized_conv(prefilt_response, spap_inh_mask_temp, 0.0)
                             
+                            # cut off values above 1
+                            apsp_inh_masked_vals[apsp_inh_masked_vals > 1] = 1
+                            spsp_inh_masked_vals[spsp_inh_masked_vals > 1] = 1
+                            apap_inh_masked_vals[apap_inh_masked_vals > 1] = 1
+                            spap_inh_masked_vals[spap_inh_masked_vals > 1] = 1
+
                             # save values for this o2, f2 filter into the overall inhibition for filter o, f
                             inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_inh_masked_vals
                             inh_exc_vals[n][1] = inh_exc_vals[n][1] + spsp_inh_masked_vals
@@ -219,6 +225,13 @@ class LapdogModel(object):
                                                                             0.0)
                                 spap_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spap_exc_mask_temp,
                                                                             0.0)
+
+                                # cut off values above 1
+                                apsp_exc_masked_vals[apsp_exc_masked_vals > 1] = 1
+                                spsp_exc_masked_vals[spsp_exc_masked_vals > 1] = 1
+                                apap_exc_masked_vals[apap_exc_masked_vals > 1] = 1
+                                spap_exc_masked_vals[spap_exc_masked_vals > 1] = 1
+
                                 # save values for this o2, f2 filter into the overall inhibition for filter o, f
                                 inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
                                 inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
@@ -294,6 +307,10 @@ class LapdogModel(object):
                         sp_total_inh = (inh_exc_vals[n][0] + inh_exc_vals[n][1]) * self.conn_weights[c][0]
                         ap_total_inh = (inh_exc_vals[n][2] + inh_exc_vals[n][3]) * self.conn_weights[c][0]
 
+                        # cut off any values above 1
+                        sp_total_inh[sp_total_inh > 1] = 1
+                        ap_total_inh[ap_total_inh > 1] = 1
+
                         # apply inhibition
                         temp_sp_filter_resp = filter_resp - sp_total_inh
                         temp_ap_filter_resp = ap_filter_resp - ap_total_inh
@@ -307,6 +324,10 @@ class LapdogModel(object):
                         if self.variant == "lapdog2":
                             sp_total_exc = (inh_exc_vals[n][4] + inh_exc_vals[n][5]) * self.conn_weights[c][1]
                             ap_total_exc = (inh_exc_vals[n][6] + inh_exc_vals[n][7]) * self.conn_weights[c][1]
+
+                            # cut off any values above 1
+                            sp_total_exc[sp_total_exc > 1] = 1
+                            ap_total_exc[ap_total_exc > 1] = 1
 
                             temp_sp_filter_resp = filter_resp + sp_total_exc
                             temp_ap_filter_resp = ap_filter_resp + ap_total_exc
