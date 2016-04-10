@@ -148,24 +148,28 @@ class LapdogModel(object):
                         filtermask = stim.params.filtermasks[o][f][o2][f2]
                         ap_filtermask = stim.params.ap_filtermasks[o][f][o2][f2]
 
+                        # get max mask value for use in flattening edges of mask to prevent issues in later convolution
+                        filtermax = np.max(np.abs(filtermask))
+                        filterthresh = filtermax * 0.001
+
                         apsp_inh_mask = np.copy(ap_filtermask) * -1
-                        apsp_inh_mask[apsp_inh_mask < 0] = 0  # only keep negative values of original ap_filtermask
+                        apsp_inh_mask[apsp_inh_mask < filterthresh] = 0  # only keep negative values of original mask
                         spsp_inh_mask = np.copy(filtermask) * -1
-                        spsp_inh_mask[spsp_inh_mask < 0] = 0  # only keep negative values of original filtermask
+                        spsp_inh_mask[spsp_inh_mask < filterthresh] = 0  # only keep negative values of original mask
                         apap_inh_mask = np.copy(filtermask) * -1
-                        apap_inh_mask[apap_inh_mask < 0] = 0  # only keep negative values of original filtermask
+                        apap_inh_mask[apap_inh_mask < filterthresh] = 0  # only keep negative values of original mask
                         spap_inh_mask = np.copy(ap_filtermask) * -1
-                        spap_inh_mask[spap_inh_mask < 0] = 0  # only keep negative values of original ap_filtermask
+                        spap_inh_mask[spap_inh_mask < filterthresh] = 0  # only keep negative values of original mask
 
                         if self.variant == "lapdog2":
                             apsp_exc_mask = np.copy(ap_filtermask)
-                            apsp_exc_mask[apsp_exc_mask < 0] = 0
+                            apsp_exc_mask[apsp_exc_mask < filterthresh] = 0
                             spsp_exc_mask = np.copy(filtermask)
-                            spsp_exc_mask[spsp_exc_mask < 0] = 0
+                            spsp_exc_mask[spsp_exc_mask < filterthresh] = 0
                             apap_exc_mask = np.copy(filtermask)
-                            apap_exc_mask[apap_exc_mask < 0] = 0
+                            apap_exc_mask[apap_exc_mask < filterthresh] = 0
                             spap_exc_mask = np.copy(ap_filtermask)
-                            spap_exc_mask[spap_exc_mask < 0] = 0
+                            spap_exc_mask[spap_exc_mask < filterthresh] = 0
 
                         # get standard phase and antiphase presynaptic filter responses (note: filter response
                         # values range from 0 to 1) - to be used in the loops below
