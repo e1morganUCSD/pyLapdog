@@ -109,6 +109,7 @@ def our_conv(img, filt, padval):
     :return: result of convolution
     :rtype: numpy.core.multiarray.ndarray
     """
+
     # pad the images
     s_filt = filt.shape
     s_img = img.shape
@@ -143,5 +144,60 @@ def our_conv(img, filt, padval):
 
     # extract the appropriate portion of the filtered image
     filtered = temp_out[(s_filt[0] / 2): (s_filt[0] / 2) + s_img[0], (s_filt[1] / 2): (s_filt[1] / 2) + s_img[1]]
+
+    return filtered
+
+
+def lapconv(img, filt, padval):
+    """
+    Performs FFT-based normalization on filter and image, without normalization
+
+    :param numpy.core.multiarray.ndarray img: stimulus image to be convolved
+    :param numpy.core.multiarray.ndarray filt: filter to convolve with
+    :param float padval: value with which to pad the img before convolution
+    :return: result of convolution
+    :rtype: numpy.core.multiarray.ndarray
+    """
+
+    # get the number of nonzero entries in the filter for later dividing of the results
+    filt_nnz = np.count_nonzero(filt)
+
+    # pad the images
+    s_filt = filt.shape
+    s_img = img.shape
+
+    # appropriate padding depends on context
+    pad_img = np.ones((s_img[0] + s_filt[0], s_img[1] + s_filt[1])) * padval
+
+    pad_img[0: s_img[0], 0: s_img[1]] = img
+
+    pad_filt = np.zeros((s_img[0] + s_filt[0], s_img[1] + s_filt[1]))
+
+    pad_filt[0: s_filt[0], 0: s_filt[1]] = filt
+
+    # initialize the GPU
+    FFTPlan(shape=pad_img.shape, itype=np.complex64, otype=np.complex64)
+
+    # create temporary arrays for holding FFT values
+    normtemp1 = np.zeros(pad_img.shape, dtype=np.complex64)
+    normtemp2 = np.zeros(pad_img.shape, dtype=np.complex64)
+
+    d_pad_filt = cuda.to_device(pad_filt.astype(np.complex64))
+    d_pad_img = cuda.to_device(pad_img.astype(np.complex64))
+    d_normtemp1 = cuda.to_device(normtemp1)
+    d_normtemp2 = cuda.to_device(normtemp2)
+
+    fft(d_pad_filt, d_normtemp1)
+    fft(d_pad_img, d_normtemp2)
+    vmult(d_normtemp1, d_normtemp2, out=d_normtemp1)
+    ifft(d_normtemp1, d_normtemp2)
+    # temp_out = (cuda.fft.ifft_inplace(cuda.fft.fft_inplace(pad_img)) * cuda.fft.fft_inplace(pad_filt)).real
+    temp_out = d_normtemp2.copy_to_host().real
+
+    # extract the appropriate portion of the filtered image
+    filtered = temp_out[(s_filt[0] / 2): (s_filt[0] / 2) + s_img[0], (s_filt[1] / 2): (s_filt[1] / 2) + s_img[1]]
+
+    # divide each value by the number of nonzero entries in the filter, so we get an average of all the values
+    filtered /= filt_nnz
 
     return filtered

@@ -24,21 +24,20 @@ class Stim(object):
         :param str stimtype: type of stimulus generated
         :param par.FilterParams params: filter parameters and filters
         """
-        # strip off variant name if present
-        if stimtype[-2:] == "DD" or stimtype[-2:] == "DI":
-            variant = stimtype[-2:]
-            stimtype = stimtype[:-3]
-        else:
-            variant = ""
-
-        self.variant = variant
-        self.stimtype = stimtype
-        self.params = params
-
         # create "friendly" name of stimulus for use in figures, folders, etc
         self.friendlyname = stimtype
-        if variant != "":
-            self.friendlyname = self.friendlyname + " (" + variant + ")"
+
+        # strip off variant name if present
+        if stimtype[-3:-1] == "DD" or stimtype[-3:-1] == "DI":
+            self.variant = stimtype[-3:-1]
+            self.stimtype = stimtype[:-5]
+        else:
+            self.variant = ""
+            self.stimtype = stimtype
+
+        # self.variant = variant
+        # self.stimtype = stimtype
+        self.params = params
 
         # create output directory stub for stimulus
         self.outDir = self.friendlyname + "/"
@@ -46,155 +45,155 @@ class Stim(object):
         print("Generating stimulus " + self.friendlyname + "...")
 
         # generate stimulus image
-        if stimtype == "Whites":
+        if self.stimtype == "Whites":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_whites()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Howe var B":
+        elif self.stimtype == "Howe var B":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_howe_b()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Howe":
+        elif self.stimtype == "Howe":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_howe()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Howe var D":
+        elif self.stimtype == "Howe var D":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_howe_d()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "SBC":
+        elif self.stimtype == "SBC":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_sbc()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Anderson":
+        elif self.stimtype == "Anderson":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_anderson()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Rings":
+        elif self.stimtype == "Rings":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_rings()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 0, 0)
 
-        elif stimtype == "Radial":
+        elif self.stimtype == "Radial":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_radial()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 256, 256, 256, 256)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 256, 256, 256, 256)
 
-        elif stimtype == "Zigzag":
+        elif self.stimtype == "Zigzag":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_zigzag()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
 
-        elif stimtype == "Jacob 1":
+        elif self.stimtype == "Jacob 1":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_jacob_1()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
 
-        elif stimtype == "Jacob 2":
+        elif self.stimtype == "Jacob 2":
             self.img, self.regions, self.cutX, self.cutY, self.bg_region, \
                 self.low_region, self.high_region = _make_jacob_2()
-            if variant == "DD":
+            if self.variant == "DD":
                 self.img[self.img == 0.0] = -1.0
                 self.img[self.img == 0.5] = 0.0
                 self.img[self.img == -1.0] = 0.5
                 self.img = _fix_variant_bg(self.img, 128, 128, 128, 128)
-            elif variant == "DI":
+            elif self.variant == "DI":
                 self.img[self.img == 0.5] = -1.0
                 self.img[self.img == 1.0] = 0.5
                 self.img[self.img == -1.0] = 1.0
@@ -284,7 +283,7 @@ class Stim(object):
 
             fig = plt.figure()
             ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
-            ax.bar([-0.125, 1.0 - 0.125], [bg_region_mean, hi_region_mean, lo_region_mean], 0.25)
+            ax.bar([-0.275, 1.0 - 0.225, 2.0 - 0.225], [bg_region_mean, hi_region_mean, lo_region_mean], 0.45)
             ax.set_xticks([0, 1, 2])  # ticks for bg, hi, lo
             ax.set_xlim([-0.5, 2.5])
             ax.set_xticklabels(['BG', 'HI', 'LO'])
@@ -1173,7 +1172,7 @@ def _label_regions(img, value):
         for j in range(mask_size[1]):
             # if this region has not been set yet, grow the region and set it
             if mask[i, j] == 1:
-                mask = _grow_region(i, j, mask, region_number)
+                mask = _grow_region(i, j, mask, region_number)  # TODO: speed up this function - it is SLOW
                 region_number += 1
 
     # reduce the region numbers by one
@@ -1211,10 +1210,10 @@ def _grow_region(i_start, j_start, mask, reg_num):
                 if j < (mask_size[1] - 1) and mask[i, j + 1] == set_val:
                     mask[i, j] = set_val
                 # check above
-                elif i > 1 and mask[i - 1, j] == set_val:
+                elif i > 0 and mask[i - 1, j] == set_val:
                     mask[i, j] = set_val
                 # check left
-                elif j > 1 and mask[i, j - 1] == set_val:
+                elif j > 0 and mask[i, j - 1] == set_val:
                     mask[i, j] = set_val
                 # check below
                 elif i < (mask_size[0] - 1) and mask[i + 1, j] == set_val:
@@ -1227,10 +1226,10 @@ def _grow_region(i_start, j_start, mask, reg_num):
                 if j < (mask_size[1] - 1) and mask[i, j + 1] == set_val:
                     mask[i, j] = set_val
                 # check above
-                elif i > 1 and mask[i - 1, j] == set_val:
+                elif i > 0 and mask[i - 1, j] == set_val:
                     mask[i, j] = set_val
                 # check left
-                elif j > 1 and mask[i, j - 1] == set_val:
+                elif j > 0 and mask[i, j - 1] == set_val:
                     mask[i, j] = set_val
                 # check below
                 elif i < (mask_size[0] - 1) and mask[i + 1, j] == set_val:

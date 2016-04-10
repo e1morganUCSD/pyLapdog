@@ -6,6 +6,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import matplotlib.cm as mpltcm
+import matplotlib.colors as colors
 
 
 def get_subject_data():
@@ -189,14 +191,14 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
 
     # get the names of all the models, using stimulus #1 as an example
     for key in diffs[stimlist[0]]:
-        model_names += key
+        model_names.append(key)
         model_diffs[key] = []
 
     # get subject 'names'
     for num in range(len(human_data[stimlist[0]])):
         key = "subject #{}".format(num + 1)
-        subject_names += key
-        subject_diffs[num + 1] = []
+        subject_names.append(key)
+        subject_diffs[num] = []
 
     # get max values while iterating through the list for later normalization
     model_max_diff = 0
@@ -206,24 +208,26 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
         modelvals = diffs[stimname]
         subject_vals = human_data[stimname]
         for key in model_names:
-            model_diffs[key] += modelvals[key]      # add the current stimulus' diff value to the end of the model's
-            #                                         list
+            model_diffs[key].append(modelvals[key])      # add the current stimulus' diff value to the end of the
+            # model's list
             if abs(modelvals[key]) > model_max_diff:
                 model_max_diff = abs(modelvals[key])
 
         for keynum in range(len(subject_names)):
-            subject_diffs[keynum] += subject_vals[keynum]
+            subject_diffs[keynum].append(subject_vals[keynum])
             if abs(subject_vals[keynum]) > subject_max_diff:
                 subject_max_diff = abs(subject_vals[keynum])
 
     # normalize diffs
-    for key in model_diffs:
-        for index in model_diffs[key]:
-            model_diffs[key][index] /= model_max_diff
+    for modeldiff in model_diffs:
+        for index in range(len(modeldiff)):
+            if model_max_diff != 0:
+                modeldiff[index] /= model_max_diff
 
-    for key in subject_diffs:
-        for index in subject_diffs[key]:
-            subject_diffs[key][index] /= subject_max_diff
+    for subjectdiff in subject_diffs:
+        for index in range(len(subjectdiff)):
+            if subject_max_diff != 0:
+                subjectdiff[index] /= subject_max_diff
 
     # create output directory for plots
     new_outdir = outdir + "comparisons/"
@@ -231,7 +235,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
         os.makedirs(new_outdir)
 
     # create a plot for each subject vs model
-    index = np.arange(len(stimlist))
+    index = range(len(stimlist))
     bar_width = 0.35
 
     for subject_num in range(len(subject_names)):
@@ -240,17 +244,18 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
 
             fig, ax = plt.subplots()
 
-            rects1 = plt.bar(index, model_diffs[modelname], bar_width, label=modelname)
-            rects2 = plt.bar(index, subject_diffs[subject_num], bar_width,
-                             label="Subject #{}".format(subject_num + 1))
+            rects1 = plt.bar(index, model_diffs[modelname], bar_width, label=modelname, color='b')
+            second_bar_indexes = list(x + bar_width for x in index)
+            rects2 = plt.bar(second_bar_indexes, subject_diffs[subject_num], bar_width,
+                             label="Subject #{}".format(subject_num + 1), color='y')
 
             plt.xlabel("Stimuli")
             plt.ylabel("Response Difference")
             plt.title("{} - results vs. Subject #{}".format(modelname, subject_num + 1))
-            plt.xticks(index + bar_width, stimlist, rotation=45, horizontalalignment='right')
+            plt.xticks([x + bar_width for x in index], stimlist, rotation=45, horizontalalignment='right')
 
             plt.legend()
-            plt.tight_layout()
+            # plt.tight_layout()
 
             # the following will work if Qt is the backend for matplotlib.  TODO: make this universal
             manager = plt.get_current_fig_manager()
@@ -264,7 +269,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
     model_correct_vals = np.zeros((len(subject_names), len(model_names)))
     for subject_num in range(len(subject_names)):
         for modelnum in range(len(model_names)):
-            modelname = model_names[modelname]
+            modelname = model_names[modelnum]
             correctcount = 0
             correctval = 0
 
@@ -281,19 +286,28 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
     # plot model success rates and values
     filename = "Model_correct_count_totals.png"
 
-    fig, ax = plt.subplots()
+    fig = plt.figure(figsize=(12.0, 12.0))  # figure size in inches
+    ax = fig.add_subplot(1, 1, 1)
 
     indexes = range(len(model_names))
+    num_colors = len(subject_names)
+    cm = plt.get_cmap('rainbow')
+    cNorm = colors.Normalize(vmin=0, vmax=num_colors-1)
+    scalarMap = mpltcm.ScalarMappable(norm=cNorm, cmap=cm)
+    ax.set_color_cycle([scalarMap.to_rgba(i) for i in range(num_colors)])
+    # color_iterator = [scalarMap. for i in range(num_colors)]
+    # colorlist = cm(color_iterator)
+    # ax.set_prop_cycle(color=colorlist)
+
+    # colorlist = list(cm(1.*i/len(subject_names) for i in range(len(subject_names))))
+    # color = iter(cm.rainbow(np.linspace(0, 1, len(subject_names))))
     for subject_num in range(len(subject_names)):
+        # c = next(colorlist)
         plt.plot(indexes, model_correct_count[subject_num, :], label="Subject #{}".format(subject_num + 1))
 
     plt.xticks(indexes, model_names, rotation=45, horizontalalignment='right')
     plt.legend()
     plt.tight_layout()
-
-    # the following will work if Qt is the backend for matplotlib.  TODO: make this universal
-    manager = plt.get_current_fig_manager()
-    manager.window.showMaximized()
 
     plt.savefig(new_outdir + filename)
     plt.close()

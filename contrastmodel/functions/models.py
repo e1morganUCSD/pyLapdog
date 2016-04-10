@@ -11,6 +11,7 @@ import copy
 # from numba import cuda
 
 
+
 class Model(object):
     # TODO: figure out how to make it so that I can create a new "Model" and have it figure out the subclass
     # from the init?
@@ -103,7 +104,7 @@ class LapdogModel(object):
                     imaging.generate_image(ap_filterresponses[o][f], title, filename, outDir)
 
         for o in range(len(orientations)):
-            print("Processing orientation {} of {}".format(o, len(orientations)))
+            print("Processing orientation {} of {}".format(o + 1, len(orientations)))
             # used to hold per-orientation results
             temp_orient = [[np.zeros((stim.params.filt_rows, stim.params.filt_cols)) for _ in self.conn_weights] for _
                            in self.npow]
@@ -199,10 +200,10 @@ class LapdogModel(object):
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
-                            spsp_inh_masked_vals = gpuf.normalized_conv(prefilt_response, spsp_inh_mask_temp, 0.0)
-                            apap_inh_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
-                            spap_inh_masked_vals = gpuf.normalized_conv(prefilt_response, spap_inh_mask_temp, 0.0)
+                            apsp_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
+                            spsp_inh_masked_vals = gpuf.lapconv(prefilt_response, spsp_inh_mask_temp, 0.0)
+                            apap_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
+                            spap_inh_masked_vals = gpuf.lapconv(prefilt_response, spap_inh_mask_temp, 0.0)
                             
                             # cut off values above 1
                             apsp_inh_masked_vals[apsp_inh_masked_vals > 1] = 1
@@ -217,14 +218,10 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apsp_exc_mask_temp,
-                                                                            0.0)
-                                spsp_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spsp_exc_mask_temp,
-                                                                            0.0)
-                                apap_exc_masked_vals = gpuf.normalized_conv(prefilt_ap_response, apap_exc_mask_temp,
-                                                                            0.0)
-                                spap_exc_masked_vals = gpuf.normalized_conv(prefilt_response, spap_exc_mask_temp,
-                                                                            0.0)
+                                apsp_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
+                                spsp_exc_masked_vals = gpuf.lapconv(prefilt_response, spsp_exc_mask_temp, 0.0)
+                                apap_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
+                                spap_exc_masked_vals = gpuf.lapconv(prefilt_response, spap_exc_mask_temp, 0.0)
 
                                 # cut off values above 1
                                 apsp_exc_masked_vals[apsp_exc_masked_vals > 1] = 1
@@ -443,3 +440,45 @@ class LapdogModel(object):
                 model_outdir[self.variant + "-e{}".format(self.npow[n]) + variant_conn_string] = new_outDir
 
         return model_out, model_outdir
+
+
+class FlodogModel(object):
+    """
+    model parameter set specific to FLODOG and FLODOG2 (FLODOG with normalization from other orientations as well as
+    frequencies)
+
+    """
+
+    def __init__(self, sig1mult, sr, sdmix):
+        """
+
+        :param list(float) sig1mult: extent of normalization mask in the direction of the filter, as multiplier
+        :param list(float) sr: extent of normalization mask perpendicular to the filter, as multiplier to sig1mult
+        :param list(list(float)) sdmix:
+        """
+
+
+def get_model(variant="", npow=None, conn_weights=None, sig1mult=None, sr=None, sdmix=None):
+    """
+    Returns model of the correct type
+    :param string variant: type of model (flodog, flodog2, lapdog, lapdog2)
+    :param list(float) npow: (for LAPDOG) power to which the connectivity values are raised. higher power = less
+        connectivity
+    :param list(list(float)) or list(list(float, float)) conn_weights: (for LAPDOG) inhibitory or inhibitory/excitatory
+        multipliers for LAPDOG inhibition and excitation
+    :param sig1mult: (for FLODOG) extent of normalization mask in the direction of the filter, as multiplier
+    :param sr: (for FLODOG) extent of normalization mask perpendicular to the filter, as multiplier to sig1mult
+    :param sdmix: (for FLODOG) standard deviation of Gaussian used for weighting - for FLODOG2 the first value is the
+        standard deviation across frequencies and the second value is the standard deviation across orientations
+    :return: requested model
+    :rtype: LapdogModel or FlodogModel
+    """
+    if variant[0:6] == "lapdog":
+        model = LapdogModel(variant, npow, conn_weights)
+    elif variant[0:6] == "flodog":
+        model = FlodogModel(sig1mult, sr, sdmix)
+
+    return model
+
+
+

@@ -12,20 +12,20 @@ import contrastmodel.functions.models as modelclass
 import contrastmodel.functions.subjects as subj
 
 #mainDir = "C:\\Users\\Eric\\Documents\\PyLapdog_Output\\initialtest\\"
-mainDir = "/home/AD/e1morgan/Documents/e1morgan_data/pyLapdog_output/initial_test/"
+mainDir = "/home/AD/e1morgan/Documents/e1morgan_data/pyLapdog_output/two_lapdog_test/"
 
 print("Generating params:")
 params = par.FilterParams(mainDir, verbosity=3)
 
-#reduce the parameters for now, for quicker testing of later stuff
-params.filt_orientations = params.filt_orientations[0:3]
-params.filt_stdev_pixels = params.filt_stdev_pixels[0:3]
+# #reduce the parameters for now, for quicker testing of later stuff
+# params.filt_orientations = params.filt_orientations[0:3]
+# params.filt_stdev_pixels = params.filt_stdev_pixels[0:3]
 params.load_filtermasks()
 
 print("Generating models:")
-modellist = [["lapdog2", [3], [[2, 1]]]]
-# modellist = [["lapdog", [1], [[3]]],
-#              ["lapdog2", [3], [[2, 1]]]]
+# modellist = [["lapdog2", [3], [[2, 1]]]]
+modellist = [["lapdog", [1, 10], [[3]]],
+             ["lapdog2", [1, 5, 10], [[2, 1], [5, 2]]]]
 
 models = {}
 for model in range(len(modellist)):
@@ -34,9 +34,9 @@ for model in range(len(modellist)):
 print("done generating models")
 
 print("Generating stims:")
-stimlist = ["Whites"]
-            # "Whites (DD)",
-            # "Rings",
+stimlist = ["Whites",
+            "Whites (DD)",
+            "Rings"]
             # "Zigzag"]
 
 stims = {}
@@ -57,7 +57,7 @@ for stimname in stimlist:
     diffs[stimname] = {}
 
     for modelnum in range(len(models)):
-        print("----Processing model {} of {}".format(modelnum, len(models)))
+        print("----Processing model {} of {}".format(modelnum + 1, len(models)))
         results_temp, results_dirs_temp = models[modelnum].process_stim(stims[stimname])
         results[stimname].update(results_temp)
         results_dirs[stimname].update(results_dirs_temp)

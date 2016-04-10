@@ -23,6 +23,8 @@ def generate_image(img, title, filename, img_dir, cmap="jet", maximize=False):
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
 
+    plt.ioff()  # turn off interactive mode (this should prevent a bunch of figures from popping up on screen)
+
     plt.imshow(img, interpolation="none", cmap=cmap)
     plt.colorbar()
     plt.suptitle(title)
