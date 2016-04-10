@@ -198,8 +198,9 @@ def lapconv(img, filt, padval):
     # extract the appropriate portion of the filtered image
     filtered = temp_out[(s_filt[0] / 2): (s_filt[0] / 2) + s_img[0], (s_filt[1] / 2): (s_filt[1] / 2) + s_img[1]]
 
-    # divide each value by the number of nonzero entries in the filter, so we get an average of all the values
-    filtered /= filt_nnz
+    # divide each value by the number of nonzero entries in the filter (and image?!?), so we get an average of all the
+    # values
+    filtered /= (filt_nnz * s_img[0] * s_img[1])
 
     return filtered
 

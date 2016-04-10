@@ -197,10 +197,10 @@ class LapdogModel(object):
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
-                            spsp_inh_masked_vals = gpuf.stupidconv2(prefilt_response, spsp_inh_mask_temp, 0.0)
-                            apap_inh_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apap_inh_mask_temp, 0.0)
-                            spap_inh_masked_vals = gpuf.stupidconv2(prefilt_response, spap_inh_mask_temp, 0.0)
+                            apsp_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
+                            spsp_inh_masked_vals = gpuf.lapconv(prefilt_response, spsp_inh_mask_temp, 0.0)
+                            apap_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
+                            spap_inh_masked_vals = gpuf.lapconv(prefilt_response, spap_inh_mask_temp, 0.0)
                             
                             # cut off values above 1
                             apsp_inh_masked_vals[apsp_inh_masked_vals > 1] = 1
@@ -215,10 +215,10 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
-                                spsp_exc_masked_vals = gpuf.stupidconv2(prefilt_response, spsp_exc_mask_temp, 0.0)
-                                apap_exc_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apap_exc_mask_temp, 0.0)
-                                spap_exc_masked_vals = gpuf.stupidconv2(prefilt_response, spap_exc_mask_temp, 0.0)
+                                apsp_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
+                                spsp_exc_masked_vals = gpuf.lapconv(prefilt_response, spsp_exc_mask_temp, 0.0)
+                                apap_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
+                                spap_exc_masked_vals = gpuf.lapconv(prefilt_response, spap_exc_mask_temp, 0.0)
 
                                 # cut off values above 1
                                 apsp_exc_masked_vals[apsp_exc_masked_vals > 1] = 1
