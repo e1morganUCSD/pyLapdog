@@ -130,7 +130,7 @@ class FilterParams(object):
             # generate filters
             self.filts, self.ap_filts = self._gen_filters_odog()
 
-            if self.verbosity == 3:
+            if self.verbosity == 4:  # TODO: CHANGE THIS BACK TO == 3
                 self._print_filts()
 
     def load_filtermasks(self):

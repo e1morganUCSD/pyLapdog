@@ -5,6 +5,7 @@ functions designed to run on GPU
 from accelerate.cuda.fft import FFTPlan, fft_inplace, ifft_inplace, fft, ifft
 from numba import cuda, vectorize
 import numpy as np
+import scipy.signal as ss
 
 
 @vectorize(['complex64(complex64, complex64)'], target='cuda')
@@ -201,3 +202,108 @@ def lapconv(img, filt, padval):
     filtered /= filt_nnz
 
     return filtered
+
+
+def stupidconv(img, filt, padval):
+    """
+    does convolution without using FFT because FFT is pissing me off and giving me weird answers
+    :param img:
+    :param filt:
+    :param padval:
+    :return:
+    """
+
+    # get the number of nonzero entries in the filter for later averaging of result
+    filt_nnz = np.count_nonzero(filt)
+
+    # pad the images
+    s_filt = filt.shape
+    s_img = img.shape
+
+    # appropriate padding depends on context
+    # pad with filt size all around img
+    pad_img = np.ones((s_img[0] + (2 * s_filt[0]), s_img[1] + (2 * s_filt[1]))) * padval
+
+    pad_img[s_filt[0]: s_img[0] + s_filt[0], s_filt[1]: s_img[1] + s_filt[1]] = img
+
+    output = np.zeros(pad_img.shape)
+
+    for row in range(s_filt[0] + s_img[0]):
+        for col in range(s_filt[1] + s_img[1]):
+            # total = 0.0
+            # for filtrow in range(s_filt[0]):
+            #     for filtcol in range(s_filt[1]):
+            #         total = total + (filt[filtrow, filtcol] * pad_img[row + filtrow, col + filtcol])
+            output[row, col] = np.sum(filt * pad_img[row:row + s_filt[0], col:col + s_filt[1]])
+
+    output = output[s_filt[0]:s_filt[0] + s_img[0], s_filt[1]:s_filt[1] + s_img[1]]
+
+    return output / filt_nnz
+
+
+@cuda.jit('void(float32[:,:], float32[:,:], int32, int32, int32, int32, float32[:,:])')
+def stupidconv_gpu_helper(pad_img, filt, img_rows, img_cols, filt_rows, filt_cols, d_output):
+
+    for row in range(filt_rows + img_rows):
+        for col in range(filt_cols + img_cols):
+            total = 0.0
+            for filtrow in range(filt_rows):
+                for filtcol in range(filt_cols):
+                    total = total + (filt[filtrow, filtcol] * pad_img[row + filtrow, col + filtcol])
+            d_output[row, col] = total
+
+
+def stupidconv_gpu(img, filt, padval):
+    """
+    does convolution without using FFT because FFT is pissing me off and giving me weird answers
+    :param img:
+    :param filt:
+    :param padval:
+    :return:
+    """
+    cuda.close()
+    cuda.select_device(1)
+    # get the number of nonzero entries in the filter for later averaging of result
+    filt_nnz = np.count_nonzero(filt)
+
+    # pad the images
+    s_filt = filt.shape
+    s_img = img.shape
+
+    # appropriate padding depends on context
+    # pad with filt size all around img
+    pad_img = np.ones((s_img[0] + (2 * s_filt[0]), s_img[1] + (2 * s_filt[1])), dtype=np.float32) * padval
+
+    pad_img[s_filt[0]: s_img[0] + s_filt[0], s_filt[1]: s_img[1] + s_filt[1]] = img
+
+    output = np.zeros(pad_img.shape, dtype=np.float32)
+
+    d_pad_img = cuda.to_device(pad_img)
+    d_filt = cuda.to_device(filt)
+    d_output = cuda.to_device(output)
+
+    stupidconv_gpu_helper(d_pad_img, d_filt, s_img[0], s_img[1], s_filt[0], s_filt[1], d_output)
+
+    output = d_output.copy_to_host()
+    output = output[s_filt[0]:s_filt[0] + s_img[0], s_filt[1]:s_filt[1] + s_img[1]]
+
+    return output / filt_nnz
+
+
+def stupidconv2(img, filt, padval):
+    """
+    does convolution without using FFT because FFT is pissing me off and giving me weird answers
+    :param img:
+    :param filt:
+    :param padval:
+    :return:
+    """
+
+    # get the number of nonzero entries in the filter for later averaging of result
+    filt_nnz = np.count_nonzero(filt)
+
+    filt = np.fliplr(np.flipud(filt))
+
+    output = ss.fftconvolve(img, filt, mode="same")
+
+    return output / filt_nnz

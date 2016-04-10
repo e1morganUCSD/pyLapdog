@@ -218,7 +218,7 @@ class Stim(object):
             _gen_filter_response(self.params, self.img)
 
         # (optionally) print filter responses for stimulus
-        if params.verbosity > 1:
+        if params.verbosity > 4:  # TODO: CHANGE THIS BACK
             print("Printing filter images...")
             self._print_filter_responses()
 

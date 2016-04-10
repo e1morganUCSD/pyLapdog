@@ -11,7 +11,6 @@ import copy
 # from numba import cuda
 
 
-
 class Model(object):
     # TODO: figure out how to make it so that I can create a new "Model" and have it figure out the subclass
     # from the init?
@@ -81,22 +80,16 @@ class LapdogModel(object):
             filtweight = self.filt_weights[f]
             for o in range(len(orientations)):
                 filterresponses[o][f] = filterresponses[o][f] * filtweight
+                ap_filterresponses[o][f] = ap_filterresponses[o][f] * filtweight
 
-                # output image file if needed
-                if verbosity == 3:
+                # output image files if needed
+                if verbosity > 2:
                     filename = "z1-{}-weighted-prenormal-{}-{}.png".format(self.friendlyname, orientations[o],
                                                                            stdev_pixels[f])
                     title = "{} Normalization, weighted, prenormalization: orientation {}, frequency (pixels) " \
                             "{}".format(self.friendlyname, orientations[o], stdev_pixels[f])
                     imaging.generate_image(filterresponses[o][f], title, filename, outDir)
 
-        for f in range(len(stdev_pixels)):
-            filtweight = self.filt_weights[f]
-            for o in range(len(orientations)):
-                ap_filterresponses[o][f] = ap_filterresponses[o][f] * filtweight
-
-                # output image file if needed
-                if verbosity == 3:
                     filename = "z1-{}-weighted-prenormal-ap-{}-{}.png".format(self.friendlyname, orientations[o],
                                                                               stdev_pixels[f])
                     title = "{} Normalization, weighted, antiphase, prenormalization: orientation {}, frequency" \
@@ -204,10 +197,10 @@ class LapdogModel(object):
 
                             # convolve presynaptic filter responses with connection masks to get levels of inhibition
                             #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
-                            spsp_inh_masked_vals = gpuf.lapconv(prefilt_response, spsp_inh_mask_temp, 0.0)
-                            apap_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
-                            spap_inh_masked_vals = gpuf.lapconv(prefilt_response, spap_inh_mask_temp, 0.0)
+                            apsp_inh_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
+                            spsp_inh_masked_vals = gpuf.stupidconv2(prefilt_response, spsp_inh_mask_temp, 0.0)
+                            apap_inh_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apap_inh_mask_temp, 0.0)
+                            spap_inh_masked_vals = gpuf.stupidconv2(prefilt_response, spap_inh_mask_temp, 0.0)
                             
                             # cut off values above 1
                             apsp_inh_masked_vals[apsp_inh_masked_vals > 1] = 1
@@ -222,10 +215,10 @@ class LapdogModel(object):
                             inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
 
                             if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
-                                spsp_exc_masked_vals = gpuf.lapconv(prefilt_response, spsp_exc_mask_temp, 0.0)
-                                apap_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
-                                spap_exc_masked_vals = gpuf.lapconv(prefilt_response, spap_exc_mask_temp, 0.0)
+                                apsp_exc_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
+                                spsp_exc_masked_vals = gpuf.stupidconv2(prefilt_response, spsp_exc_mask_temp, 0.0)
+                                apap_exc_masked_vals = gpuf.stupidconv2(prefilt_ap_response, apap_exc_mask_temp, 0.0)
+                                spap_exc_masked_vals = gpuf.stupidconv2(prefilt_response, spap_exc_mask_temp, 0.0)
 
                                 # cut off values above 1
                                 apsp_exc_masked_vals[apsp_exc_masked_vals > 1] = 1
@@ -244,7 +237,7 @@ class LapdogModel(object):
                     for x in range(len(inh_exc_vals[n])):
                         inh_exc_vals[n][x] /= (len(orientations) * len(stdev_pixels))
 
-                if verbosity == 3:
+                if verbosity > 2:
                     # create image files of the inhibitory/excitatory values
                     for n in range(len(self.npow)):
                         new_outDir = outDir + "npow{}/".format(self.npow[n])
@@ -338,7 +331,7 @@ class LapdogModel(object):
 
                             variant_conn_string += "-excweight{}".format(self.conn_weights[c][1])
 
-                            if verbosity == 3:
+                            if verbosity > 2:
                                 # output images of total inhibition and excitation (outputting inhibition here so it
                                 # uses proper directory name
                                 new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
@@ -379,7 +372,7 @@ class LapdogModel(object):
                                 imaging.generate_image(ap_total_exc, title, filename, new_outDir)
 
                         else:  # not lapdog2 (doing this here to preserve correct output directories)
-                            if verbosity == 3:
+                            if verbosity > 2:
                                 new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
                                 filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
                                                                                              self.npow[n],
@@ -477,6 +470,10 @@ def get_model(variant="", npow=None, conn_weights=None, sig1mult=None, sr=None, 
     :return: requested model
     :rtype: LapdogModel or FlodogModel
     """
+
+    # default output for invalid model type just to make the warnings on the return statement shut up
+    model = None
+
     if variant[0:6] == "lapdog":
         model = LapdogModel(variant, npow, conn_weights)
     elif variant[0:6] == "flodog":
