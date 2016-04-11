@@ -244,6 +244,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
 
             fig, ax = plt.subplots()
 
+            # TODO: add reference line at 0
             rects1 = plt.bar(index, model_diffs[modelname], bar_width, label=modelname, color='b')
             second_bar_indexes = list(x + bar_width for x in index)
             rects2 = plt.bar(second_bar_indexes, subject_diffs[subject_num], bar_width,
@@ -294,7 +295,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
     cm = plt.get_cmap('rainbow')
     cNorm = colors.Normalize(vmin=0, vmax=num_colors-1)
     scalarMap = mpltcm.ScalarMappable(norm=cNorm, cmap=cm)
-    ax.set_color_cycle([scalarMap.to_rgba(i) for i in range(num_colors)])
+    ax.set_prop_cycle(color=[scalarMap.to_rgba(i) for i in range(num_colors)])
     # color_iterator = [scalarMap. for i in range(num_colors)]
     # colorlist = cm(color_iterator)
     # ax.set_prop_cycle(color=colorlist)

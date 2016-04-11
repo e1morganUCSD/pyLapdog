@@ -24,8 +24,8 @@ params.load_filtermasks()
 
 print("Generating models:")
 # modellist = [["lapdog2", [3], [[2, 1]]]]
-modellist = [["lapdog", [1, 10], [[0.5], [2]]],
-             ["lapdog2", [1, 5, 10], [[2, 1]]]]
+modellist = [["lapdog", [1], [[2]]],
+             ["lapdog2", [1, 5], [[2, 1]]]]
 
 models = {}
 for model in range(len(modellist)):
@@ -35,8 +35,8 @@ print("done generating models")
 
 print("Generating stims:")
 stimlist = ["Whites",
-            "Whites (DD)",
             "Rings"]
+            # "Whites (DD)",
             # "Zigzag"]
 
 stims = {}

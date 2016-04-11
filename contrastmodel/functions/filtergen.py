@@ -22,7 +22,7 @@ def gauss(x, std):
             std * math.sqrt(2 * math.pi))
 
 
-def _d2gauss(n1, std1, n2, std2, theta):
+def d2gauss(n1, std1, n2, std2, theta):
     """
     Generates a 2D Gaussian with size n1*n2.
 
@@ -81,9 +81,9 @@ def gen_odog(rows, cols, row_std, col_std, sr1, sr2, theta, center_weight):
     :rtype: numpy.core.multiarray.ndarray
     """
 
-    return center_weight * (_d2gauss(rows, row_std, cols, col_std, theta) -
-                            _d2gauss(rows, row_std * sr1, cols, col_std * sr2,
-                                     theta))
+    return center_weight * (d2gauss(rows, row_std, cols, col_std, theta) -
+                            d2gauss(rows, row_std * sr1, cols, col_std * sr2,
+                                    theta))
 
 
 # ---FILTER HELPER FUNCTIONS---
@@ -142,7 +142,7 @@ def trimfilt(filt, threshold):
 # ---TESTING---
 if __name__ == "__main__":
     print("testing d2gauss - should produce 200x200 gaussian")
-    test = _d2gauss(200, 8.4, 200, 8.4, 60)
+    test = d2gauss(200, 8.4, 200, 8.4, 60)
 
     import matplotlib.pyplot as plt
 

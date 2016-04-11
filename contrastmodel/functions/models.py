@@ -9,6 +9,7 @@ import contrastmodel.functions.gpufunc as gpuf
 import contrastmodel.functions.filtergen as fgen
 # import scipy.signal as ss
 import copy
+import math
 # from numba import cuda
 
 
@@ -393,9 +394,9 @@ class LapdogModel(object):
                                                                        stdev_pixels[f])
                                 imaging.generate_image(ap_total_inh, title, filename, new_outDir)
 
-                        # subtract the AP filter response from the SP response to get a total response that ranges
-                        # from -1 to 1
-                        temp_filter_resp = temp_sp_filter_resp - temp_ap_filter_resp
+                        # average the AP and SP filter responses, flipping the AP responses, since they are
+                        # dark-sensitive
+                        temp_filter_resp = (temp_sp_filter_resp + (1 - temp_ap_filter_resp)) / 2.0
                         temp_filter_resp[temp_filter_resp < 0] = 0
                         temp_filter_resp[temp_filter_resp > 1] = 1
                         temp_orient[n][c] += temp_filter_resp
@@ -430,7 +431,7 @@ class LapdogModel(object):
 
         # divide final output by number of orientations to find average response
         for output in model_out:
-            output /= (len(stdev_pixels) * len(orientations))
+            model_out[output] /= (len(stdev_pixels) * len(orientations))
         # generate image of finished model output and process patch differences and plot them
         for n in range(len(self.npow)):
             for c in range(len(self.conn_weights)):
@@ -507,7 +508,7 @@ class FlodogModel(object):
             filtweight = stim.params.filt_w_val[f]
             for o in range(len(orientations)):
                 filterresponses[o][f] = filterresponses[o][f] * filtweight
-                ap_filterresponses[o][f] = ap_filterresponses[o][f] * filtweight
+                #ap_filterresponses[o][f] = ap_filterresponses[o][f] * filtweight
 
                 # output image files if needed
                 if verbosity > 2:
@@ -517,11 +518,11 @@ class FlodogModel(object):
                             "{}".format(self.friendlyname, orientations[o], stdev_pixels[f])
                     imaging.generate_image(filterresponses[o][f], title, filename, outDir)
 
-                    filename = "z1-{}-weighted-prenormal-ap-{}-{}.png".format(self.friendlyname, orientations[o],
-                                                                              stdev_pixels[f])
-                    title = "{} Normalization, weighted, antiphase, prenormalization: orientation {}, frequency" \
-                            " (pixels) {}".format(self.friendlyname, orientations[o], stdev_pixels[f])
-                    imaging.generate_image(ap_filterresponses[o][f], title, filename, outDir)
+                    # filename = "z1-{}-weighted-prenormal-ap-{}-{}.png".format(self.friendlyname, orientations[o],
+                    #                                                           stdev_pixels[f])
+                    # title = "{} Normalization, weighted, antiphase, prenormalization: orientation {}, frequency" \
+                    #         " (pixels) {}".format(self.friendlyname, orientations[o], stdev_pixels[f])
+                    # imaging.generate_image(ap_filterresponses[o][f], title, filename, outDir)
 
         for o in range(len(orientations)):
             print("Processing orientation {} of {}".format(o + 1, len(orientations)))
@@ -534,7 +535,9 @@ class FlodogModel(object):
                 filter_resp = np.copy(filterresponses[o][f])
 
                 # build weighted normalizer
-                normalizer = [[np.zeros((stim.params.filt_rows, stim.params.filt_cols))] for _ in self.sdmix]
+                # normalizer_common = [np.zeros((stim.params.filt_rows, stim.params.filt_cols)) for _ in self.sdmix]
+                normalizer = [[[np.zeros((stim.params.filt_rows, stim.params.filt_cols)) for _ in self.sdmix] for _
+                              in self.sig1mult] for _ in self.sr]
                 area = [[0] for _ in self.sdmix]
 
                 for sdmix_index in range(len(self.sdmix)):
@@ -542,11 +545,87 @@ class FlodogModel(object):
                         if self.variant == "flodog2":
                             gweight = fgen.gauss(np.array([f - wf]), self.sdmix[sdmix_index][0])
                             area[sdmix_index] = area[sdmix_index] + gweight
-                            # LAST POINT OF EDIT HERE
+                            oarea = 0.0
+                            onormalizer = np.zeros((stim.params.filt_rows, stim.params.filt_cols))
+                            for wo in range(len(orientations)):
+                                ogweight = fgen.gauss(np.array([o - wo]), self.sdmix[sdmix_index][1])
+                                oarea = oarea + ogweight
+                                onormalizer = onormalizer + (filterresponses[wo, wf] * ogweight)
+                            onormalizer /= len(orientations)
+                            onormalizer /= oarea
+                            onormalizer *= gweight
+
+                            # convert onormalizer to 0-center for later convolution
+                            onormalizer = (onormalizer * 2.0) - 1.0
+
+                            # create the normalization extent filter
+                            for sig1_index in range(len(self.sig1mult)):
+                                sig1 = self.sig1mult[sig1_index] * stdev_pixels[wf]
+                                for sr_index in range(len(self.sr)):
+                                    sig2 = sig1 * self.sr[sr_index]
+                                    rot = orientations[o] * math.pi / 180.0
+
+                                    mask = fgen.d2gauss(stim.params.filt_rows, sig1, stim.params.filt_cols, sig2, rot)
+
+                                    # set mask max to 1
+                                    mask /= np.max(np.abs(mask))
+                                    mask = (mask * 2.0) - 1.0  # converts mask to 0-center for better convolution
+
+                                    onormalizer_temp = gpuf.normalized_conv(onormalizer, mask, 0.0)
+
+                                    # convert onormalizer_temp back to 0.5-center so that positive and negative
+                                    # values don't cancel each other out when adding results
+                                    onormalizer_temp = (onormalizer_temp + 1.0) * 2.0
+                                    normalizer[sr_index][sdmix_index][sig1_index] += onormalizer_temp
+
                         else:  # self.variant == 'flodog'
                             gweight = fgen.gauss(np.array([f - wf]), self.sdmix[sdmix_index])
                             area[sdmix_index] = area[sdmix_index] + gweight
-                            normalizer[sdmix_index] = normalizer[sdmix_index] + filterresponses[o][wf] * gweight
+                            for sig1_index in range(len(self.sig1mult)):
+                                for sr_index in range(len(self.sr)):
+                                    normalizer[sr_index][sdmix_index][sig1_index] += filterresponses[o][wf] * gweight
+
+                    for sig1_index in range(len(self.sig1mult)):
+                        for sr_index in range(len(self.sr)):
+                            if self.variant == 'flodog':
+                                normalizer_temp = normalizer[sr_index][sdmix_index][sig1_index] ** 2.0
+
+                                sig1 = self.sig1mult[sig1_index] * stdev_pixels[f]
+                                sig2 = sig1 * self.sr[sr_index]
+                                rot = orientations[o] * math.pi / 180.0
+
+                                mask = fgen.d2gauss(stim.params.filt_rows, sig1, stim.params.filt_cols, sig2, rot)
+                                mask /= np.sum(mask)
+
+                                # output the mask to image file
+                                if verbosity > 2:
+                                    sdmix_string = "sdmix{}".format(self.sdmix[sdmix_index])
+                                    sig1_string = "sig1{}".format(self.sig1mult[sig1_index])
+                                    sr_string = "sr{}".format(self.sr[sr_index])
+                                    orientation_string = "orientation{}".format(orientations[o])
+                                    new_outDir = outDir + sig1_string + "/" + sr_string + sdmix_string
+
+                                    filename = self.friendlyname + "mask-" + sdmix_string + "-" + \
+                                               sig1_string + "-" + sr_string + ".png"
+                                    title =
+
+                                normalizer_temp = gpuf.normalized_conv(normalizer_temp, mask, 0.0)
+                                normalizer_temp += 10**-6  # apparently this is to kill small negative values that
+                                # sometimes appear after fft?
+
+                                normalizer_temp = normalizer_temp**0.5
+
+                                temp_out = filter_resp / (normalizer_temp + 10**-6)
+
+                                temp_orient[sig1_index][sr_index][sdmix_index] += temp_out
+
+                                # TODO: give output to model_out
+
+
+                            else:  # FLODOG2
+                                normalizer[sr_index][sdmix_index][sig1_index] /= len(stdev_pixels)
+
+
 
 
                 # save values in one list per npow setting
