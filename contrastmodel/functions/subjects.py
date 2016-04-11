@@ -220,14 +220,14 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
 
     # normalize diffs
     for modeldiff in model_diffs:
-        for index in range(len(modeldiff)):
+        for index in range(len(model_diffs[modeldiff])):
             if model_max_diff != 0:
-                modeldiff[index] /= model_max_diff
+                model_diffs[modeldiff][index] /= model_max_diff
 
     for subjectdiff in subject_diffs:
-        for index in range(len(subjectdiff)):
+        for index in range(len(subject_diffs[subjectdiff])):
             if subject_max_diff != 0:
-                subjectdiff[index] /= subject_max_diff
+                subject_diffs[subjectdiff][index] /= subject_max_diff
 
     # create output directory for plots
     new_outdir = outdir + "comparisons/"

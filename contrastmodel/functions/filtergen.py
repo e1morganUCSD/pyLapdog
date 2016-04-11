@@ -8,7 +8,7 @@ from numba import cuda
 
 
 # ---FILTER GENERATION HELPER FUNCTIONS---
-def _gauss(x, std):
+def gauss(x, std):
     """
     Generates a 1D gaussian
 
@@ -52,8 +52,8 @@ def _d2gauss(n1, std1, n2, std2, theta):
     coor = np.dot(r, np.vstack((Xs, Ys)))
 
     # compute 1D Gaussians
-    gaussX = _gauss(np.array(coor[0, :]), std1)
-    gaussY = _gauss(np.array(coor[1, :]), std2)
+    gaussX = gauss(np.array(coor[0, :]), std1)
+    gaussY = gauss(np.array(coor[1, :]), std2)
 
     # elementwise multiplication creates a 2D Gaussian
     h = np.reshape(gaussX * gaussY, (n2, n1), order='F').copy()

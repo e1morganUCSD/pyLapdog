@@ -281,6 +281,7 @@ class Stim(object):
             outDir = results_dirs[key]
             filename = self.friendlyname + "-" + key + "-regionmeans.png"
 
+            # TODO: add value to end of bars
             fig = plt.figure()
             ax = fig.add_axes((0.1, 0.2, 0.8, 0.7))
             ax.bar([-0.275, 1.0 - 0.225, 2.0 - 0.225], [bg_region_mean, hi_region_mean, lo_region_mean], 0.45)
