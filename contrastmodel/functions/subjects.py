@@ -242,7 +242,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
         for modelname in model_names:
             filename = "{}_results_{}.png".format(modelname, subject_num)
 
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(16.0, 12.0))
 
             # TODO: add reference line at 0
             rects1 = plt.bar(index, model_diffs[modelname], bar_width, label=modelname, color='b')
@@ -287,7 +287,7 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
     # plot model success rates and values
     filename = "Model_correct_count_totals.png"
 
-    fig = plt.figure(figsize=(12.0, 12.0))  # figure size in inches
+    fig = plt.figure(figsize=(16.0, 12.0))  # figure size in inches
     ax = fig.add_subplot(1, 1, 1)
 
     indexes = range(len(model_names))
@@ -316,11 +316,12 @@ def plot_diffs(diffs, human_data, stimlist, outdir):
     # save individual plots for each subject
     for subject_num in range(len(subject_names)):
         filename = "Model_correct_count_totals_subject{}.png".format(subject_num)
-        plt.subplot(2, 1, 1)
+        fig = plt.figure(figsize=(16.0, 12.0))  # figure size in inches
+        ax1 = fig.add_subplot(2, 1, 1)
         plt.plot(indexes, model_correct_count[subject_num, :])
         plt.xticks(indexes, model_names, rotation=45, horizontalalignment='right')
 
-        plt.subplot(2, 1, 2)
+        ax2 = fig.add_subplot(2, 1, 2)
         plt.plot(indexes, model_correct_vals[subject_num, :])
         plt.xticks(indexes, model_names, rotation=45, horizontalalignment='right')
 

@@ -10,7 +10,6 @@ import contrastmodel.functions.filtergen as fgen
 # import scipy.signal as ss
 import copy
 import math
-# from numba import cuda
 
 
 class Model(object):
@@ -489,7 +488,6 @@ class FlodogModel(object):
         # make copy of filter responses to stimulus so they can be weighted to represent differing frequency
         # sensitivities (roughly corresponding to CSF sensitivity)
         filterresponses = copy.deepcopy(stim.filtresponses)
-        ap_filterresponses = copy.deepcopy(stim.ap_filtresponses)
 
         # make local references to variables we will be using often
         stdev_pixels = stim.params.filt_stdev_pixels
@@ -508,7 +506,6 @@ class FlodogModel(object):
             filtweight = stim.params.filt_w_val[f]
             for o in range(len(orientations)):
                 filterresponses[o][f] = filterresponses[o][f] * filtweight
-                #ap_filterresponses[o][f] = ap_filterresponses[o][f] * filtweight
 
                 # output image files if needed
                 if verbosity > 2:
@@ -602,348 +599,58 @@ class FlodogModel(object):
                                     sdmix_string = "sdmix{}".format(self.sdmix[sdmix_index])
                                     sig1_string = "sig1{}".format(self.sig1mult[sig1_index])
                                     sr_string = "sr{}".format(self.sr[sr_index])
-                                    orientation_string = "orientation{}".format(orientations[o])
-                                    new_outDir = outDir + sig1_string + "/" + sr_string + sdmix_string
+                                    new_outDir = outDir + "sdmix{}/sig{}-sr{}/".format(self.sdmix[sdmix_index],
+                                                                                       self.sig1mult[sig1_index],
+                                                                                       self.sr[sr_index])
 
                                     filename = self.friendlyname + "mask-" + sdmix_string + "-" + \
-                                               sig1_string + "-" + sr_string + ".png"
-                                    title =
+                                        sig1_string + "-" + sr_string + "-{}-{}".format(orientations[o],
+                                                                                        stdev_pixels[f]) + ".png"
 
-                                normalizer_temp = gpuf.normalized_conv(normalizer_temp, mask, 0.0)
+                                    title = self.friendlyname + " mask: orientation {}, frequency {}".format(
+                                        orientations[o], stdev_pixels[f])
+
+                                    imaging.generate_image(mask, title, filename, new_outDir)
+
+                                normalizer_temp = gpuf.our_conv(normalizer_temp, mask, 0.0)
                                 normalizer_temp += 10**-6  # apparently this is to kill small negative values that
                                 # sometimes appear after fft?
 
-                                normalizer_temp = normalizer_temp**0.5
+                                normalizer_temp **= 0.5
 
                                 temp_out = filter_resp / (normalizer_temp + 10**-6)
 
-                                temp_orient[sig1_index][sr_index][sdmix_index] += temp_out
-
-                                # TODO: give output to model_out
-
-
                             else:  # FLODOG2
-                                normalizer[sr_index][sdmix_index][sig1_index] /= len(stdev_pixels)
+                                temp_out = normalizer[sr_index][sdmix_index][sig1_index] / len(stdev_pixels)
+                                temp_out = filter_resp - temp_out
 
+                            temp_orient[sig1_index][sr_index][sdmix_index] += temp_out
 
+                            variant_full_name = self.friendlyname + "-sdmix{}-sig1{}-sr{}".format(
+                                self.sdmix[sdmix_index], self.sig1mult[sig1_index], self.sr[sr_index])
 
+                            if o == 0:
+                                model_out[variant_full_name] = temp_out
+                            else:
+                                model_out[variant_full_name] += temp_out
 
-                # save values in one list per npow setting
-                for _ in range(len(self.npow)):
-                    inh_exc_vals = inh_exc_vals + [[apsp_inh_values, spsp_inh_values, apap_inh_values, spap_inh_values]]
+        for sdmix_index in range(len(self.sdmix)):
+            for sig1_index in range(len(self.sig1mult)):
+                for sr_index in range(len(self.sr)):
+                    variant_full_name = self.friendlyname + "-sdmix{}-sig1{}-sr{}".format(
+                        self.sdmix[sdmix_index], self.sig1mult[sig1_index], self.sr[sr_index])
 
-                if self.variant == "lapdog2":
-                    apsp_exc_values = np.zeros((stim.params.filt_rows, stim.params.filt_cols))
-                    spsp_exc_values = np.zeros((stim.params.filt_rows, stim.params.filt_cols))
-                    apap_exc_values = np.zeros((stim.params.filt_rows, stim.params.filt_cols))
-                    spap_exc_values = np.zeros((stim.params.filt_rows, stim.params.filt_cols))
+                    if self.variant == "flodog2":
+                        model_out[variant_full_name] /= len(orientations)  # done for flodog2 because it tries to
+                        # stay normalized - flodog1 doesn't care
 
-                    for n in range(len(self.npow)):
-                        inh_exc_vals[n] = inh_exc_vals[n] + [apsp_exc_values, spsp_exc_values, apap_exc_values,
-                                                             spap_exc_values]
-
-                for o2 in range(len(orientations)):
-                    for f2 in range(len(stdev_pixels)):
-                        # generate mask for connection strength between filter types - masks are negative for
-                        # anticorrelation (inhibition), and positive for correlation (excitation)
-
-                        filtermask = stim.params.filtermasks[o][f][o2][f2]
-                        ap_filtermask = stim.params.ap_filtermasks[o][f][o2][f2]
-
-                        # get max mask value for use in flattening edges of mask to prevent issues in later convolution
-                        filtermax = np.max(np.abs(filtermask))
-                        filterthresh = filtermax * 0.001
-
-                        apsp_inh_mask = np.copy(ap_filtermask) * -1
-                        apsp_inh_mask[apsp_inh_mask < filterthresh] = 0  # only keep negative values of original mask
-                        spsp_inh_mask = np.copy(filtermask) * -1
-                        spsp_inh_mask[spsp_inh_mask < filterthresh] = 0  # only keep negative values of original mask
-                        apap_inh_mask = np.copy(filtermask) * -1
-                        apap_inh_mask[apap_inh_mask < filterthresh] = 0  # only keep negative values of original mask
-                        spap_inh_mask = np.copy(ap_filtermask) * -1
-                        spap_inh_mask[spap_inh_mask < filterthresh] = 0  # only keep negative values of original mask
-
-                        if self.variant == "lapdog2":
-                            apsp_exc_mask = np.copy(ap_filtermask)
-                            apsp_exc_mask[apsp_exc_mask < filterthresh] = 0
-                            spsp_exc_mask = np.copy(filtermask)
-                            spsp_exc_mask[spsp_exc_mask < filterthresh] = 0
-                            apap_exc_mask = np.copy(filtermask)
-                            apap_exc_mask[apap_exc_mask < filterthresh] = 0
-                            spap_exc_mask = np.copy(ap_filtermask)
-                            spap_exc_mask[spap_exc_mask < filterthresh] = 0
-
-                        # get standard phase and antiphase presynaptic filter responses (note: filter response
-                        # values range from 0 to 1) - to be used in the loops below
-                        prefilt_response = filterresponses[o2][f2]
-                        prefilt_ap_response = ap_filterresponses[o2][f2]
-
-                        # raise masks to npow power
-                        for n in range(len(self.npow)):
-                            # # apply mask exponent and flip for use in convolution
-                            # apsp_inh_mask_temp = np.fliplr(np.flipud(apsp_inh_mask ** self.npow[n]))
-                            # spsp_inh_mask_temp = np.fliplr(np.flipud(spsp_inh_mask ** self.npow[n]))
-                            # apap_inh_mask_temp = np.fliplr(np.flipud(apap_inh_mask ** self.npow[n]))
-                            # spap_inh_mask_temp = np.fliplr(np.flipud(spap_inh_mask ** self.npow[n]))
-                            #
-                            # if self.variant == "lapdog2":
-                            #     apsp_exc_mask_temp = np.fliplr(np.flipud(apsp_exc_mask ** self.npow[n]))
-                            #     spsp_exc_mask_temp = np.fliplr(np.flipud(spsp_exc_mask ** self.npow[n]))
-                            #     apap_exc_mask_temp = np.fliplr(np.flipud(apap_exc_mask ** self.npow[n]))
-                            #     spap_exc_mask_temp = np.fliplr(np.flipud(spap_exc_mask ** self.npow[n]))
-
-                            # apply mask exponent
-                            apsp_inh_mask_temp = apsp_inh_mask ** self.npow[n]
-                            spsp_inh_mask_temp = spsp_inh_mask ** self.npow[n]
-                            apap_inh_mask_temp = apap_inh_mask ** self.npow[n]
-                            spap_inh_mask_temp = spap_inh_mask ** self.npow[n]
-
-                            if self.variant == "lapdog2":
-                                apsp_exc_mask_temp = apsp_exc_mask ** self.npow[n]
-                                spsp_exc_mask_temp = spsp_exc_mask ** self.npow[n]
-                                apap_exc_mask_temp = apap_exc_mask ** self.npow[n]
-                                spap_exc_mask_temp = spap_exc_mask ** self.npow[n]
-
-                            # convolve presynaptic filter responses with connection masks to get levels of inhibition
-                            #  and excitation to filter o,f for current stimulus
-                            apsp_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_inh_mask_temp, 0.0)
-                            spsp_inh_masked_vals = gpuf.lapconv(prefilt_response, spsp_inh_mask_temp, 0.0)
-                            apap_inh_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_inh_mask_temp, 0.0)
-                            spap_inh_masked_vals = gpuf.lapconv(prefilt_response, spap_inh_mask_temp, 0.0)
-
-                            # cut off values above 1
-                            apsp_inh_masked_vals[apsp_inh_masked_vals > 1] = 1
-                            spsp_inh_masked_vals[spsp_inh_masked_vals > 1] = 1
-                            apap_inh_masked_vals[apap_inh_masked_vals > 1] = 1
-                            spap_inh_masked_vals[spap_inh_masked_vals > 1] = 1
-
-                            # save values for this o2, f2 filter into the overall inhibition for filter o, f
-                            inh_exc_vals[n][0] = inh_exc_vals[n][0] + apsp_inh_masked_vals
-                            inh_exc_vals[n][1] = inh_exc_vals[n][1] + spsp_inh_masked_vals
-                            inh_exc_vals[n][2] = inh_exc_vals[n][2] + apap_inh_masked_vals
-                            inh_exc_vals[n][3] = inh_exc_vals[n][3] + spap_inh_masked_vals
-
-                            if self.variant == "lapdog2":
-                                apsp_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apsp_exc_mask_temp, 0.0)
-                                spsp_exc_masked_vals = gpuf.lapconv(prefilt_response, spsp_exc_mask_temp, 0.0)
-                                apap_exc_masked_vals = gpuf.lapconv(prefilt_ap_response, apap_exc_mask_temp, 0.0)
-                                spap_exc_masked_vals = gpuf.lapconv(prefilt_response, spap_exc_mask_temp, 0.0)
-
-                                # cut off values above 1
-                                apsp_exc_masked_vals[apsp_exc_masked_vals > 1] = 1
-                                spsp_exc_masked_vals[spsp_exc_masked_vals > 1] = 1
-                                apap_exc_masked_vals[apap_exc_masked_vals > 1] = 1
-                                spap_exc_masked_vals[spap_exc_masked_vals > 1] = 1
-
-                                # save values for this o2, f2 filter into the overall inhibition for filter o, f
-                                inh_exc_vals[n][4] = inh_exc_vals[n][4] + apsp_exc_masked_vals
-                                inh_exc_vals[n][5] = inh_exc_vals[n][5] + spsp_exc_masked_vals
-                                inh_exc_vals[n][6] = inh_exc_vals[n][6] + apap_exc_masked_vals
-                                inh_exc_vals[n][7] = inh_exc_vals[n][7] + spap_exc_masked_vals
-
-                # get average inhibition/excitation
-                for n in range(len(self.npow)):
-                    for x in range(len(inh_exc_vals[n])):
-                        inh_exc_vals[n][x] /= (len(orientations) * len(stdev_pixels))
-
-                if verbosity > 2:
-                    # create image files of the inhibitory/excitatory values
-                    for n in range(len(self.npow)):
-                        new_outDir = outDir + "npow{}/".format(self.npow[n])
-                        filename = "z2-{}-e{}-apsp_inh_normvals-{}-{}.png".format(self.friendlyname, self.npow[n], o, f)
-                        title = "{}-e{} AP-SP Inhibitory mask: orientation {}, " \
-                                "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                               stdev_pixels[f])
-                        imaging.generate_image(inh_exc_vals[n][0], title, filename, new_outDir)
-
-                        filename = "z2-{}-e{}-spsp_inh_normvals-{}-{}.png".format(self.friendlyname, self.npow[n], o, f)
-                        title = "{}-e{} SP-SP Inhibitory mask: orientation {}, " \
-                                "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                               stdev_pixels[f])
-                        imaging.generate_image(inh_exc_vals[n][1], title, filename, new_outDir)
-
-                        filename = "z2-{}-e{}-apap_inh_normvals-{}-{}.png".format(self.friendlyname, self.npow[n], o, f)
-                        title = "{}-e{} AP-AP Inhibitory mask: orientation {}, " \
-                                "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                               stdev_pixels[f])
-                        imaging.generate_image(inh_exc_vals[n][2], title, filename, new_outDir)
-
-                        filename = "z2-{}-e{}-spap_inh_normvals-{}-{}.png".format(self.friendlyname, self.npow[n], o, f)
-                        title = "{}-e{} SP-AP Inhibitory mask: orientation {}, " \
-                                "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                               stdev_pixels[f])
-                        imaging.generate_image(inh_exc_vals[n][3], title, filename, new_outDir)
-
-                        if self.variant == "lapdog2":
-                            filename = "z2-{}-e{}-apsp_exc_normvals-{}-{}.png".format(self.friendlyname,
-                                                                                      self.npow[n], o, f)
-                            title = "{}-e{} AP-SP Inhibitory mask: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(inh_exc_vals[n][4], title, filename, new_outDir)
-
-                            filename = "z2-{}-e{}-spsp_exc_normvals-{}-{}.png".format(self.friendlyname,
-                                                                                      self.npow[n], o, f)
-                            title = "{}-e{} SP-SP Inhibitory mask: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(inh_exc_vals[n][5], title, filename, new_outDir)
-
-                            filename = "z2-{}-e{}-apap_exc_normvals-{}-{}.png".format(self.friendlyname,
-                                                                                      self.npow[n], o, f)
-                            title = "{}-e{} AP-AP Inhibitory mask: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(inh_exc_vals[n][6], title, filename, new_outDir)
-
-                            filename = "z2-{}-e{}-spap_exc_normvals-{}-{}.png".format(self.friendlyname,
-                                                                                      self.npow[n], o, f)
-                            title = "{}-e{} SP-AP Inhibitory mask: orientation {}, " \
-                                    "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                   stdev_pixels[f])
-                            imaging.generate_image(inh_exc_vals[n][7], title, filename, new_outDir)
-
-                # apply inhibition/excitation
-                for n in range(len(self.npow)):
-                    for c in range(len(self.conn_weights)):
-                        # collect inhibitory totals and weigh them
-                        sp_total_inh = (inh_exc_vals[n][0] + inh_exc_vals[n][1]) * self.conn_weights[c][0]
-                        ap_total_inh = (inh_exc_vals[n][2] + inh_exc_vals[n][3]) * self.conn_weights[c][0]
-
-                        # cut off any values above 1
-                        sp_total_inh[sp_total_inh > 1] = 1
-                        ap_total_inh[ap_total_inh > 1] = 1
-
-                        # apply inhibition
-                        temp_sp_filter_resp = filter_resp - sp_total_inh
-                        temp_ap_filter_resp = ap_filter_resp - ap_total_inh
-
-                        # any values inhibited past 0 should be cut off (you can't have a negative firing rate)
-                        temp_sp_filter_resp[temp_sp_filter_resp < 0] = 0
-                        temp_ap_filter_resp[temp_ap_filter_resp < 0] = 0
-
-                        variant_conn_string = "-inhWeight{}".format(self.conn_weights[c][0])
-
-                        if self.variant == "lapdog2":
-                            sp_total_exc = (inh_exc_vals[n][4] + inh_exc_vals[n][5]) * self.conn_weights[c][1]
-                            ap_total_exc = (inh_exc_vals[n][6] + inh_exc_vals[n][7]) * self.conn_weights[c][1]
-
-                            # cut off any values above 1
-                            sp_total_exc[sp_total_exc > 1] = 1
-                            ap_total_exc[ap_total_exc > 1] = 1
-
-                            temp_sp_filter_resp = filter_resp + sp_total_exc
-                            temp_ap_filter_resp = ap_filter_resp + ap_total_exc
-
-                            temp_sp_filter_resp[temp_sp_filter_resp > 1] = 1
-                            temp_ap_filter_resp[temp_ap_filter_resp > 1] = 1
-
-                            variant_conn_string += "-excweight{}".format(self.conn_weights[c][1])
-
-                            if verbosity > 2:
-                                # output images of total inhibition and excitation (outputting inhibition here so it
-                                # uses proper directory name
-                                new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
-                                filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(sp_total_inh, title, filename, new_outDir)
-
-                                filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(ap_total_inh, title, filename, new_outDir)
-
-                                filename = "z3b-{}-e{}-total-SP-excitation-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} SP Total Excitation Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(sp_total_exc, title, filename, new_outDir)
-
-                                filename = "z3b-{}-e{}-total-AP-excitation-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} AP Total Excitation Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(ap_total_exc, title, filename, new_outDir)
-
-                        else:  # not lapdog2 (doing this here to preserve correct output directories)
-                            if verbosity > 2:
-                                new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
-                                filename = "z3b-{}-e{}-total-SP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} SP Total Inhibition Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(sp_total_inh, title, filename, new_outDir)
-
-                                filename = "z3b-{}-e{}-total-AP-inhibition-{}-{}.png".format(self.friendlyname,
-                                                                                             self.npow[n],
-                                                                                             orientations[o],
-                                                                                             stdev_pixels[f])
-                                title = "{}-e{} AP Total Inhibition Values: orientation {}, " \
-                                        "frequency (pixels) {}".format(self.friendlyname, self.npow[n], orientations[o],
-                                                                       stdev_pixels[f])
-                                imaging.generate_image(ap_total_inh, title, filename, new_outDir)
-
-                        # subtract the AP filter response from the SP response to get a total response that ranges
-                        # from -1 to 1
-                        temp_filter_resp = temp_sp_filter_resp - temp_ap_filter_resp
-                        temp_filter_resp[temp_filter_resp < 0] = 0
-                        temp_filter_resp[temp_filter_resp > 1] = 1
-                        temp_orient[n][c] += temp_filter_resp
-
-                        variant_full_name = self.variant + "-e{}".format(self.npow[n]) + variant_conn_string
-                        if o == 0:
-                            model_out[variant_full_name] = temp_filter_resp
-                        else:
-                            model_out[variant_full_name] += temp_filter_resp
-
-            if verbosity > 1:
-                # generate image of per-orientation values
-                for n in range(len(self.npow)):
-                    for c in range(len(self.conn_weights)):
-                        new_outDir = outDir + "npow{}/".format(self.npow[n]) + \
-                                     "-inhWeight{}".format(self.conn_weights[c][0])
-                        if self.variant == "lapdog2":
-                            new_outDir += "-excweight{}".format(self.conn_weights[c][1])
-                        new_outDir += "/"
-
-                        title = "{}-e{}, weighted, normalized, and combined: orientation: {}".format(self.variant,
-                                                                                                     self.npow[n],
-                                                                                                     orientations[o])
-                        filename = "z4-{}-e{}-normalized-weighted-{}.png".format(self.variant, self.npow[n],
-                                                                                 orientations[o])
-                        imaging.generate_image(temp_orient[n][c], title, filename, new_outDir)
-
-        # generate image of finished model output and process patch differences and plot them
-        for n in range(len(self.npow)):
-            for c in range(len(self.conn_weights)):
-                variant_conn_string = "-inhWeight{}".format(self.conn_weights[c][0])
-                if self.variant == "lapdog2":
-                    variant_conn_string += "-excweight{}".format(self.conn_weights[c][1])
-                new_outDir = outDir + "npow{}/".format(self.npow[n]) + variant_conn_string + "/"
-
-                filename = "{}-final-model.png".format(self.friendlyname)
-                title = "{} Final Model".format(self.friendlyname)
-                imaging.generate_image(model_out[self.variant + "-e{}".format(self.npow[n]) + variant_conn_string],
-                                       title, filename, new_outDir)
-                model_outdir[self.variant + "-e{}".format(self.npow[n]) + variant_conn_string] = new_outDir
+                    new_outDir = outDir + "sdmix{}/sig{}-sr{}/".format(self.sdmix[sdmix_index],
+                                                                       self.sig1mult[sig1_index],
+                                                                       self.sr[sr_index])
+                    model_outdir[variant_full_name] = new_outDir
+                    filename = "{}-final-model.png".format(self.friendlyname)
+                    title = "{} Final Model".format(variant_full_name)
+                    imaging.generate_image(model_out[variant_full_name], title, filename, new_outDir)
 
         return model_out, model_outdir
 
@@ -970,7 +677,7 @@ def get_model(variant="", npow=None, conn_weights=None, sig1mult=None, sr=None, 
     if variant[0:6] == "lapdog":
         model = LapdogModel(variant, npow, conn_weights)
     elif variant[0:6] == "flodog":
-        model = FlodogModel(sig1mult, sr, sdmix)
+        model = FlodogModel(variant, sig1mult, sr, sdmix)
 
     return model
 
